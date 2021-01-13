@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<root version="3.0">
+    <properties>
+        <name>Extra Action Types</name>
+        <author>Kiqjaq</author>
+
+        <ruleset>
+            <name>PFRPG</name>
+        </ruleset>
+        <ruleset>
+            <name>3.5E</name>
+        </ruleset>
+        <loadorder>31</loadorder>
+    </properties>
+
+    <announcement text="Extra Action Types loaded" font="systemfont" />
+
+    <base>
+        <script name="ExtraActionTypes" file="scripts/extra_action_types.lua" />
+        <includefile source="campaign/record_spell_roll.xml" />
+        <includefile source="strings/extra_action_strings.xml" />
+    </base>
+</root>

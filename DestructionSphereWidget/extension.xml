@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<root version="3.0">
+    <properties>
+        <name>Destruction Sphere Widget</name>
+        <author>Kiqjaq</author>
+
+        <ruleset>
+            <name>PFRPG</name>
+        </ruleset>
+        <loadorder>70</loadorder>
+    </properties>
+
+    <announcement text="Destruction Sphere Widget loaded" font="systemfont" />
+
+    <base>
+        <script name="DestructionSphereWidget" file="scripts/destruction_widget.lua" />
+        <includefile source="campaign/record_destruction.xml" />
+        <string name="menu_adddestructionsphere">Add Destruction Sphere</string>
+
+        <!--  Widget Strings      -->
+        <string name="power_header_destruction">Destruction Actions</string>
+        <string name="destruction_header_shape">Shape</string>
+        <string name="destruction_header_type">Type</string>
+
+    </base>
+</root>
