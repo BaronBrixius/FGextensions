@@ -52,6 +52,11 @@
 <!--                <anchored to="list_shape_iedit" position="lefthigh" offset="5,0" />-->
 <!--                <target>shape_list</target>-->
 <!--            </button_iadd>-->
+
+
+
+            <!-- TODO replace this list with a list of shape_item since I don't need multiple spell levels -->
+
             <list_charabilities name="shape_list">
                 <anchored>
                     <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
@@ -110,7 +115,7 @@
 
 
     <windowclass name="destruction_level">
-        <script file="campaign/scripts/spell_level.lua" />
+        <script file="campaign/scripts/spell_level2.lua" />
         <sheetdata>
             <genericcontrol>
                 <anchored height="24">
@@ -150,14 +155,14 @@
                     <left />
                     <right />
                 </anchored>
-                <class>spell_item</class>
+                <class>shape_item</class>
             </list_spellitem>
         </sheetdata>
     </windowclass>
 
 <!--    -->
 
-    <windowclass name="cast_destruction_actions">
+    <windowclass name="shape_item">
         <margins control="0,0,0,2" />
         <script file="campaign/scripts/spell2.lua" />
         <sheetdata>
@@ -195,7 +200,7 @@
                     <left />
                     <right parent="rightanchor" anchor="left" relation="relative" />
                 </anchored>
-                <class>shape_header</class>
+                <class>spell_header</class>
                 <activate />
                 <fastinit />
             </subwindow>
@@ -207,9 +212,9 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <datasource>.shapes</datasource>
+                <datasource>.actions</datasource>
                 <class>spell_action</class>
-<!--                <invisible />-->
+                <invisible />
             </windowlist>
         </sheetdata>
     </windowclass>
@@ -666,8 +671,6 @@
             </genericcontrol>
 
 <!--            -->
-
-
             <buttoncontrol name="DestructionWidgetButton">
                 <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25">
                 </anchored>
