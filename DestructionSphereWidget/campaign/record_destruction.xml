@@ -2,7 +2,7 @@
 <root>
     <!--    based on power_heal_editor  -->
     <windowclass name="DestructionWidget">
-<!--        <script file="scripts/destruction_widget.lua" />-->
+        <!--        <script file="scripts/destruction_widget.lua" />-->
         <frame>recordsheet</frame>
         <placement>
             <size width="500" height="400" />
@@ -40,23 +40,25 @@
     <windowclass name="destruction_editor_main">
         <sheetdata>
             <anchor_column name="columnanchor" />
+
+
+            <subwindow name="cast">
+                <anchored>
+                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
+                    <left offset="10" />
+                    <right offset="-10" />
+                </anchored>
+                <class>cast_header</class>
+                <center />
+                <activate />
+                <fastinit />
+            </subwindow>
+
+
             <header_column name="header_shape">
                 <static textres="destruction_header_shape" />
                 <center />
             </header_column>
-<!--            <button_iedit name="list_shape_iedit">-->
-<!--                <anchored to="header_shape" position="insidetopright" offset="-5,0" />-->
-<!--                <target>shape_list</target>-->
-<!--            </button_iedit>-->
-<!--            <button_iadd name="list_shape_iadd">-->
-<!--                <anchored to="list_shape_iedit" position="lefthigh" offset="5,0" />-->
-<!--                <target>shape_list</target>-->
-<!--            </button_iadd>-->
-
-
-
-            <!-- TODO replace this list with a list of shape_item since I don't need multiple spell levels -->
-
             <list_charabilities name="shape_list">
                 <script file="campaign/scripts/spell_level2.lua" />
                 <anchored>
@@ -65,56 +67,12 @@
                     <right offset="0" />
                 </anchored>
                 <datasource>.destruction_shapes</datasource>
-                <class>shape_item</class>
+                <class>shape_spell</class>
             </list_charabilities>
-
-            <!--
-            <label name="header_type">
-                <anchored height="20">
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="0" />
-                    <right offset="0" />
-                </anchored>
-                <frame name="headersimple" offset="10,3,10,3" />
-                <center />
-                <static textres="destruction_header_type" />
-                <center />
-            </label>
-            <button_iedit name="list_type_iedit">
-                <anchored to="header_type" position="insidetopright" offset="-5,0" />
-                <target>type_list</target>
-            </button_iedit>
-            <button_iadd name="list_type_iadd">
-                <anchored to="list_type_iedit" position="lefthigh" offset="5,0" />
-                <target>type_list</target>
-            </button_iadd>
-            <list_charabilities name="type_list">
-                <anchored height="20">
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="0" />
-                    <right offset="0" />
-                </anchored>
-                <datasource>.destruction_type</datasource>
-                <class>cast_destruction_actions</class>
-            </list_charabilities>
-            -->
-
-<!--            <windowlist name="actions">-->
-<!--                <anchored>-->
-<!--                    <top parent="header_destruction" anchor="bottom" relation="relative" offset="5" />-->
-<!--                    <left offset="10" />-->
-<!--                    <right />-->
-<!--                </anchored>-->
-<!--                <noscroll />-->
-<!--                <datasource>.actions</datasource>-->
-<!--                <class>spell_action</class>-->
-<!--                <invisible />-->
-<!--            </windowlist>-->
-
         </sheetdata>
     </windowclass>
 
-    <windowclass name="shape_item">
+    <windowclass name="shape_spell">
         <margins control="0,0,0,2" />
         <script file="campaign/scripts/spell2.lua" />
         <sheetdata>
@@ -125,12 +83,6 @@
                 </anchored>
                 <invisible />
             </genericcontrol>
-            <button_idelete name="idelete">
-                <anchored to="rightanchor">
-                    <top />
-                    <right anchor="left" relation="relative" offset="-5" />
-                </anchored>
-            </button_idelete>
             <linkcontrol name="shortcut">
                 <anchored to="rightanchor" width="20" height="20">
                     <top />
@@ -152,7 +104,7 @@
                     <left />
                     <right parent="rightanchor" anchor="left" relation="relative" />
                 </anchored>
-                <class>spell_header</class>
+                <class>shape_header</class>
                 <activate />
                 <fastinit />
             </subwindow>
@@ -172,7 +124,7 @@
     </windowclass>
 
 
-<!--    -->
+    <!--    -->
 
     <windowclass name="shape_header">
         <margins control="0,0,0,2" />
@@ -192,12 +144,27 @@
         <sheetdata>
             <anchor_column name="hanchor" />
 
-            <genericcontrol name="usespacer">
-                <anchored width="10" height="20">
-                    <top offset="2" />
+            <buttonfield name="usespell" source="cast.shape">
+                <anchored width="12" height="12">
+                    <top offset="7" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
-            </genericcontrol>
+                <state icon="button_checkoff" />
+                <state icon="button_checkon" />
+                <script>
+                    function onInit()
+                    onValueChanged();
+                    end
+
+                    function onValueChanged()
+                    if getValue() == 1 then
+                    window.usepower.setColor("FF000000");
+                    else
+                    window.usepower.setColor("7F000000");
+                    end
+                    end
+                </script>
+            </buttonfield>
             <icon_usepower name="usepower">
                 <anchored>
                     <top offset="7" />
@@ -211,13 +178,6 @@
                 </anchored>
                 <min>0</min>
             </basicnumber>
-            <genericcontrol name="cost_spacer">
-                <anchored width="0" height="20">
-                    <top offset="2" />
-                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
-                </anchored>
-                <disabled />
-            </genericcontrol>
             <counter_spell name="counter">
                 <anchored>
                     <top offset="2" />
@@ -275,6 +235,118 @@
         </sheetdata>
     </windowclass>
 
+
+    <windowclass name="cast_header">
+        <script file="campaign/scripts/destruction_cast.lua" />
+        <frame>referenceblock-text3</frame>
+        <margins control="20,20,20,20" />
+        <sheetdata>
+            <anchor_effect_left name="castanchor" />
+        </sheetdata>
+    </windowclass>
+
+
+    <!--    <template name="icon_usepower">-->
+    <!--        <buttoncontrol>-->
+    <!--            <anchored width="10" height="10" />-->
+    <!--            <icon normal="spell_cast" />-->
+    <!--            <tooltip textres="spell_tooltip_usepower" />-->
+    <!--            <script>-->
+    <!--                function onButtonPress()-->
+    <!--                window.usePower();-->
+    <!--                end-->
+    <!--            </script>-->
+    <!--        </buttoncontrol>-->
+    <!--    </template>-->
+
+
+    <!--    todo get anchors working so these are dynamically stackable, then set up some bundles -->
+
+    <template name="destruction_action_usepowerbutton">
+        <icon_usepower name="usepower">
+            <anchored>
+                <left parent="castanchor" anchor="topright" relation="relative" offset="2,2" width="20" height="20" />
+            </anchored>
+        </icon_usepower>
+    </template>
+
+    <template name="destruction_action_castbutton">
+        <anchored>
+            <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+        </anchored>
+    </template>
+    <template name="destruction_action_castlabel">
+        <label name="castlabel">
+            <anchored to="castbutton" position="righthigh" offset="3,0" />
+            <static textres="spell_label_cast" />
+        </label>
+    </template>
+
+    <template name="destruction_action_attackbutton">
+        <button_spellaction name="attackbutton">
+            <anchored>
+                <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+            </anchored>
+            <icon normal="button_action_attack" pressed="button_action_attack_down" />
+            <subroll>atk</subroll>
+        </button_spellaction>
+    </template>
+    <template name="destruction_action_attackviewlabel">
+        <label name="attackviewlabel">
+            <anchored to="attackbutton" position="righthigh" offset="3,0" />
+            <static textres="spell_label_atk" />
+        </label>
+    </template>
+    <template name="destruction_action_attackview">
+        <string_spellactionview name="attackview">
+            <anchored to="attackviewlabel" position="righthigh" offset="7,0" width="80" />
+            <subroll>atk</subroll>
+        </string_spellactionview>
+    </template>
+
+    <template name="destruction_action_levelcheckbutton">
+        <button_spellaction name="levelcheckbutton">
+            <anchored>
+                <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+            </anchored>
+            <subroll>clc</subroll>
+        </button_spellaction>
+    </template>
+    <template name="destruction_action_levelcheckviewlabel">
+        <label name="levelcheckviewlabel">
+            <anchored to="levelcheckbutton" position="righthigh" offset="3,0" />
+            <static textres="clc" />
+            <tooltip textres="casterlevelcheck" />
+        </label>
+    </template>
+    <template name="destruction_action_levelcheckview">
+        <string_spellactionview name="levelcheckview">
+            <anchored to="levelcheckviewlabel" position="righthigh" offset="7,0" width="25" />
+            <subroll>clc</subroll>
+        </string_spellactionview>
+    </template>
+
+    <template name="destruction_action_savebutton">
+        <button_spellaction name="savebutton">
+            <anchored>
+                <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+            </anchored>
+            <subroll>save</subroll>
+        </button_spellaction>
+    </template>
+    <template name="destruction_action_saveviewlabel">
+        <label name="saveviewlabel">
+            <anchored to="savebutton" position="righthigh" offset="3,0" />
+            <static textres="save" />
+        </label>
+    </template>
+    <template name="destruction_action_saveview">
+        <string_spellactionview name="saveview">
+            <anchored to="saveviewlabel" position="righthigh" offset="7,0" width="60" />
+            <subroll>save</subroll>
+        </string_spellactionview>
+    </template>
+
     <windowclass name="spell_class">
         <margins control="0,0,0,5" />
         <script file="campaign/scripts/spell_class.lua" />
@@ -322,7 +394,7 @@
                 </anchored>
                 <min>0</min>
                 <tooltip textres="spell_tooltip_ppused" />
-                <tabtarget next="availablelevel0" prev="points"/>
+                <tabtarget next="availablelevel0" prev="points" />
                 <script>
                     function onValueChanged()
                     window.onSpellCounterUpdate();
@@ -343,7 +415,7 @@
                 </anchored>
                 <min>0</min>
                 <tooltip textres="spell_tooltip_ppmax" />
-                <tabtarget next="pointsused" prev="cl"/>
+                <tabtarget next="pointsused" prev="cl" />
                 <script>
                     function onValueChanged()
                     window.onSpellCounterUpdate();
@@ -379,7 +451,7 @@
                 </anchored>
                 <min>0</min>
                 <tooltip textres="casterlevel" />
-                <tabtarget next="points" prev="label"/>
+                <tabtarget next="points" prev="label" />
                 <script>
                     function onValueChanged()
                     window.onStatUpdate();
@@ -425,34 +497,34 @@
                 <anchored to="frame_levels" position="insidetopleft" offset="55,25" width="1" height="25" />
             </genericcontrol>
             <number_spellsavailable name="availablelevel0">
-                <tabtarget next="availablelevel1" prev="pointsused"/>
+                <tabtarget next="availablelevel1" prev="pointsused" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel1">
-                <tabtarget next="availablelevel2" prev="availablelevel0"/>
+                <tabtarget next="availablelevel2" prev="availablelevel0" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel2">
-                <tabtarget next="availablelevel3" prev="availablelevel1"/>
+                <tabtarget next="availablelevel3" prev="availablelevel1" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel3">
-                <tabtarget next="availablelevel4" prev="availablelevel2"/>
+                <tabtarget next="availablelevel4" prev="availablelevel2" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel4">
-                <tabtarget next="availablelevel5" prev="availablelevel3"/>
+                <tabtarget next="availablelevel5" prev="availablelevel3" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel5">
-                <tabtarget next="availablelevel6" prev="availablelevel4"/>
+                <tabtarget next="availablelevel6" prev="availablelevel4" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel6">
-                <tabtarget next="availablelevel7" prev="availablelevel5"/>
+                <tabtarget next="availablelevel7" prev="availablelevel5" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel7">
-                <tabtarget next="availablelevel8" prev="availablelevel6"/>
+                <tabtarget next="availablelevel8" prev="availablelevel6" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel8">
-                <tabtarget next="availablelevel9" prev="availablelevel7"/>
+                <tabtarget next="availablelevel9" prev="availablelevel7" />
             </number_spellsavailable>
             <number_spellsavailable name="availablelevel9">
-                <tabtarget next="dcmisc" prev="availablelevel8"/>
+                <tabtarget next="dcmisc" prev="availablelevel8" />
             </number_spellsavailable>
             <label_fieldtop name="availablelevel0_label">
                 <anchored to="availablelevel0" />
@@ -622,22 +694,20 @@
                 <disabled />
             </genericcontrol>
 
-<!--            -->
+            <!--            -->
             <buttoncontrol name="DestructionWidgetButton">
-                <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25">
-                </anchored>
+                <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25"></anchored>
                 <state icon="button_roll" pressed="button_roll_down" />
                 <script>
                     function onButtonPress()
-                        local w = Interface.openWindow(editor[1], window.getDatabaseNode());
-                        w.main.subwindow.name.setValue(DB.getValue(window.getDatabaseNode(), "...name", ""));
+                    local w = Interface.openWindow(editor[1], window.getDatabaseNode());
+                    w.main.subwindow.name.setValue(DB.getValue(window.getDatabaseNode(), "...name", ""));
                     end
                 </script>
                 <tooltip textres="spell_tooltip_cc" />
                 <editor>DestructionWidget</editor>
             </buttoncontrol>
-<!--                -->
-
+            <!--                -->
 
 
             <list_spelllevel name="levels">

@@ -3,10 +3,8 @@
 -- attribution and copyright information.
 --
 
-local bShow = true;
-
 function setFilter(bFilter)
-	bShow = bFilter;
+
 end
 
 function getFilter()
@@ -41,7 +39,7 @@ function update(bEditMode)
 	if minisheet then
 		return;
 	end
-	
+
 	idelete.setVisibility(bEditMode);
 end
 
@@ -93,7 +91,6 @@ end
 
 function toggleDetail()
 	local status = (activatedetail.getValue() == 1);
-	
 	actions.setVisible(status);
 end
 
@@ -124,7 +121,6 @@ function usePower()
 
 	local sMessage;
 
-	Debug.chat(ActorManager.getActor("", nodeSpell.getChild(".....")))
 	if DB.getValue(nodeSpellClass, "castertype", "") == "points" then
 		local nPP = DB.getValue(nodeSpell, "...points", 0);
 		local nPPUsed = DB.getValue(nodeSpell, "...pointsused", 0);
