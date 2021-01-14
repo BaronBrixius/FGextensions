@@ -58,13 +58,14 @@
             <!-- TODO replace this list with a list of shape_item since I don't need multiple spell levels -->
 
             <list_charabilities name="shape_list">
+                <script file="campaign/scripts/spell_level2.lua" />
                 <anchored>
                     <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                     <left offset="0" />
                     <right offset="0" />
                 </anchored>
                 <datasource>.destruction_shapes</datasource>
-                <class>destruction_level</class>
+                <class>shape_item</class>
             </list_charabilities>
 
             <!--
@@ -112,55 +113,6 @@
 
         </sheetdata>
     </windowclass>
-
-
-    <windowclass name="destruction_level">
-        <script file="campaign/scripts/spell_level2.lua" />
-        <sheetdata>
-            <genericcontrol>
-                <anchored height="24">
-                    <top />
-                    <left />
-                    <right />
-                </anchored>
-                <frame name="rowshade" />
-                <script>
-                    function onClickDown(button, x, y)
-                        return window.onClickDown(button, x, y);
-                    end
-
-                    function onClickRelease(button, x, y)
-                        return window.onClickRelease(button, x, y);
-                    end
-                </script>
-            </genericcontrol>
-
-            <label name="label">
-                <anchored position="insidetopleft" offset="10,2" width="60" />
-                <disabled />
-            </label>
-            <label name="stats">
-                <anchored to="label" position="righthigh" offset="10,0" />
-                <disabled />
-            </label>
-
-            <button_iadd name="spells_iadd">
-                <bounds>-50,2,20,20</bounds>
-                <target>spells</target>
-            </button_iadd>
-
-            <list_spellitem name="spells">
-                <anchored>
-                    <top offset="24" />
-                    <left />
-                    <right />
-                </anchored>
-                <class>shape_item</class>
-            </list_spellitem>
-        </sheetdata>
-    </windowclass>
-
-<!--    -->
 
     <windowclass name="shape_item">
         <margins control="0,0,0,2" />

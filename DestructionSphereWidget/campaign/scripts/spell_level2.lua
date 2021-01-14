@@ -3,22 +3,15 @@
 -- attribution and copyright information.
 --
 
-local bShow = true;
-
 function onInit()
 	local node = getDatabaseNode();
 	if not node then
 		return;
 	end
-	
-	local nLevel = tonumber(string.sub(node.getName(), 6)) or 0;
-	DB.setValue(node, "level", "number", nLevel);
 
-	updateLabel();
-	
-	if not windowlist.isReadOnly() then
-		registerMenuItem(Interface.getString("menu_addspell"), "insert", 5);
-	end
+	--Debug.chat(DB.getChildren(getDatabaseNode().getParent()))
+
+	--registerMenuItem(Interface.getString("menu_addspell"), "insert", 5);
 end
 
 function update(bEditMode)
@@ -32,23 +25,8 @@ function update(bEditMode)
 	end
 end
 
-function setFilter(bFilter)
-	bShow = bFilter;
-end
-
-function getFilter()
-	return bShow;
-end
-
-function updateLabel()
-	local sLabel = "Level " .. DB.getValue(getDatabaseNode(), "level", 0);
-	
-	label.setValue(sLabel);
-end
-	
 function onSpellCounterUpdate()
-	Debug.chat(getDatabaseNode())
-	Debug.chat(getDatabaseNode().getParent().getParent())
+	--		DB.setValue(nodeSpellClass, "pointsused", "number", 0);
 	windowlist.window.onSpellCounterUpdate();
 end
 

@@ -113,27 +113,29 @@ end
 function activatePower()
 	local nodeSpell = getDatabaseNode();
 	if nodeSpell then
-		ChatManager.Message(getDescription(), true, ActorManager.getActor("", nodeSpell.getChild(".......")));
+		ChatManager.Message(getDescription(), true, ActorManager.getActor("", nodeSpell.getChild(".....")));
 	end
 end
 
 function usePower()
 	local nodeSpell = getDatabaseNode();
-	local nodeSpellClass = nodeSpell.getChild(".....");
-	local rActor = ActorManager.getActor("", nodeSpell.getChild("......."))
+	local nodeSpellClass = nodeSpell.getChild("...");
+	local rActor = ActorManager.getActor("", nodeSpell.getChild("....."))
 
 	local sMessage;
+
+	Debug.chat(ActorManager.getActor("", nodeSpell.getChild(".....")))
 	if DB.getValue(nodeSpellClass, "castertype", "") == "points" then
-		local nPP = DB.getValue(nodeSpell, ".....points", 0);
-		local nPPUsed = DB.getValue(nodeSpell, ".....pointsused", 0);
+		local nPP = DB.getValue(nodeSpell, "...points", 0);
+		local nPPUsed = DB.getValue(nodeSpell, "...pointsused", 0);
 		local nCost = DB.getValue(nodeSpell, "cost", 0);
-		
+
 		sMessage = DB.getValue(nodeSpell, "name", "") .. " [" .. nCost .. " PP]";
 		if (nPP - nPPUsed) < nCost then
 			sMessage = sMessage .. " [INSUFFICIENT PP AVAILABLE]";
 		else
 			nPPUsed = nPPUsed + nCost;
-			DB.setValue(nodeSpell, ".....pointsused", "number", nPPUsed);
+			DB.setValue(nodeSpell, "...pointsused", "number", nPPUsed);
 		end
 	else
 		sMessage = DB.getValue(nodeSpell, "name", "");
