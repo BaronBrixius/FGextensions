@@ -11,11 +11,11 @@ end
 local bDataChangedLock = false;
 function onDataChanged()
     if bDataChangedLock then
-        return;
+        return ;
     end
     bDataChangedLock = true;
     --if not m_sType then
-        createDisplay();
+    createDisplay();
     --end
     if m_sType then
         updateViews();
@@ -23,20 +23,36 @@ function onDataChanged()
     bDataChangedLock = false;
 end
 
-
 function createDisplay()
-    createControl("destruction_action_castbutton", "castbutton");
-    createControl("destruction_action_castlabel", "castlabel");
+    createAttack()
+    createDamage()
+    createAttack()
+    createSave()
+    createLevelCheck()
+end
+
+function createAttack()
     createControl("destruction_action_attackbutton", "attackbutton");
     createControl("destruction_action_attackviewlabel", "attackviewlabel");
     createControl("destruction_action_attackview", "attackview");
+end
+
+function createLevelCheck()
     createControl("destruction_action_levelcheckbutton", "levelcheckbutton");
     createControl("destruction_action_levelcheckviewlabel", "levelcheckviewlabel");
     createControl("destruction_action_levelcheckview", "levelcheckview");
+end
+
+function createSave()
     createControl("destruction_action_savebutton", "savebutton");
     createControl("destruction_action_saveviewlabel", "saveviewlabel");
     createControl("destruction_action_saveview", "saveview");
-    createControl("destruction_action_usepowerbutton", "usepower");
+end
+
+function createDamage()
+    createControl("destruction_action_damagebutton", "damagebutton");
+    createControl("destruction_action_damagelabel", "damagelabel");
+    createControl("destruction_action_damageview", "damageview");
 end
 
 function activatePower()

@@ -241,7 +241,46 @@
         <frame>referenceblock-text3</frame>
         <margins control="20,20,20,20" />
         <sheetdata>
-            <anchor_effect_left name="castanchor" />
+            <genericcontrol name="topanchor">
+                <anchored position="insidetopleft" height="0" />
+                <disabled />
+                <invisible />
+            </genericcontrol>
+            <icon_usepower name="usepower">
+                <anchored width="17" height="17">
+                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                    <top offset="4" />
+                </anchored>
+            </icon_usepower>
+            <number_chartotalnomod name="cost">
+<!--                number_linked.lua -->
+                <anchored width="20" height="20">
+                    <top offset="2" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="5" />
+                </anchored>
+            </number_chartotalnomod>
+            <button_spellaction name="castbutton">
+                <anchored>
+                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                    <top offset="2" />
+                </anchored>
+            </button_spellaction>
+            <label name="castlabel">
+                <anchored>
+                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
+                    <top offset="2" />
+                </anchored>
+                <static textres="spell_label_cast" />
+            </label>
+
+
+            <genericcontrol name="castanchor">
+                <anchored>
+                    <top parent="topanchor" anchor="bottom" offset="40" />
+                    <left offset="0" />
+                </anchored>
+                <invisible />
+            </genericcontrol>
         </sheetdata>
     </windowclass>
 
@@ -259,33 +298,11 @@
     <!--        </buttoncontrol>-->
     <!--    </template>-->
 
-
-    <!--    todo get anchors working so these are dynamically stackable, then set up some bundles -->
-
-    <template name="destruction_action_usepowerbutton">
-        <icon_usepower name="usepower">
-            <anchored>
-                <left parent="castanchor" anchor="topright" relation="relative" offset="2,2" width="20" height="20" />
-            </anchored>
-        </icon_usepower>
-    </template>
-
-    <template name="destruction_action_castbutton">
-        <anchored>
-            <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
-        </anchored>
-    </template>
-    <template name="destruction_action_castlabel">
-        <label name="castlabel">
-            <anchored to="castbutton" position="righthigh" offset="3,0" />
-            <static textres="spell_label_cast" />
-        </label>
-    </template>
-
     <template name="destruction_action_attackbutton">
         <button_spellaction name="attackbutton">
             <anchored>
-                <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+                <left parent="castanchor" anchor="right" relation="relative" offset="15" />
+                <top parent="castanchor" />
             </anchored>
             <icon normal="button_action_attack" pressed="button_action_attack_down" />
             <subroll>atk</subroll>
@@ -293,13 +310,19 @@
     </template>
     <template name="destruction_action_attackviewlabel">
         <label name="attackviewlabel">
-            <anchored to="attackbutton" position="righthigh" offset="3,0" />
+            <anchored>
+                <left parent="castanchor" anchor="right" relation="relative" offset="3" />
+                <top parent="castanchor" />
+            </anchored>
             <static textres="spell_label_atk" />
         </label>
     </template>
     <template name="destruction_action_attackview">
         <string_spellactionview name="attackview">
-            <anchored to="attackviewlabel" position="righthigh" offset="7,0" width="80" />
+            <anchored width="80">
+                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
+                <top parent="castanchor" />
+            </anchored>
             <subroll>atk</subroll>
         </string_spellactionview>
     </template>
@@ -307,21 +330,28 @@
     <template name="destruction_action_levelcheckbutton">
         <button_spellaction name="levelcheckbutton">
             <anchored>
-                <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+                <left parent="castanchor" anchor="right" relation="relative" offset="15" />
+                <top parent="castanchor" />
             </anchored>
             <subroll>clc</subroll>
         </button_spellaction>
     </template>
     <template name="destruction_action_levelcheckviewlabel">
         <label name="levelcheckviewlabel">
-            <anchored to="levelcheckbutton" position="righthigh" offset="3,0" />
+            <anchored>
+                <left parent="castanchor" anchor="right" relation="relative" offset="3" />
+                <top parent="castanchor" />
+            </anchored>
             <static textres="clc" />
             <tooltip textres="casterlevelcheck" />
         </label>
     </template>
     <template name="destruction_action_levelcheckview">
         <string_spellactionview name="levelcheckview">
-            <anchored to="levelcheckviewlabel" position="righthigh" offset="7,0" width="25" />
+            <anchored width="25">
+                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
+                <top parent="castanchor" />
+            </anchored>
             <subroll>clc</subroll>
         </string_spellactionview>
     </template>
@@ -329,21 +359,55 @@
     <template name="destruction_action_savebutton">
         <button_spellaction name="savebutton">
             <anchored>
-                <left parent="castanchor" anchor="topright" relation="relative" offset="15,0" />
+                <left parent="castanchor" anchor="right" relation="relative" offset="15" />
+                <top parent="castanchor" />
             </anchored>
             <subroll>save</subroll>
         </button_spellaction>
     </template>
     <template name="destruction_action_saveviewlabel">
         <label name="saveviewlabel">
-            <anchored to="savebutton" position="righthigh" offset="3,0" />
+            <anchored>
+                <left parent="castanchor" anchor="right" relation="relative" offset="3" />
+                <top parent="castanchor" />
+            </anchored>
             <static textres="save" />
         </label>
     </template>
     <template name="destruction_action_saveview">
         <string_spellactionview name="saveview">
-            <anchored to="saveviewlabel" position="righthigh" offset="7,0" width="60" />
+            <anchored width="60">
+                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
+                <top parent="castanchor" />
+            </anchored>
             <subroll>save</subroll>
+        </string_spellactionview>
+    </template>
+
+    <template name="destruction_action_damagebutton">
+        <button_spellaction name="damagebutton">
+            <anchored>
+                <left parent="castanchor" anchor="right" relation="relative" offset="15" />
+                <top parent="castanchor" />
+            </anchored>
+            <icon normal="button_action_damage" pressed="button_action_damage_down" />
+        </button_spellaction>
+    </template>
+    <template name="destruction_action_damagelabel">
+        <label name="damagelabel">
+            <anchored width="35">
+                <left parent="castanchor" anchor="right" relation="relative" offset="5" />
+                <top parent="castanchor" />
+            </anchored>
+            <static textres="spell_label_dmg" />
+        </label>
+    </template>
+    <template name="destruction_action_damageview">
+        <string_spellactionview name="damageview">
+            <anchored width="100">
+                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
+                <top parent="castanchor" />
+            </anchored>
         </string_spellactionview>
     </template>
 
