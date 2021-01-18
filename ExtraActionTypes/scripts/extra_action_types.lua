@@ -2,7 +2,7 @@
 -- TODO move Beat By text here
 -- TODO look into compound hotkeys (multiple actions in one press)
 -- TODO mirror image give to Aaron
--- TODO concentration checks automatic grab spell list id and apply that to effect "Concentrating list 1"
+-- TODO concentration checks calculate DC and check against roll (automatic roll already set up)
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -60,19 +60,6 @@ function onInit()
 
     -- Auto Concentration
     --ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
-
-    --Debug.console(ActionsManager.aResultHandlers);
-
-    --ActionsManager.decodeActors = decodeActors;
-end
-
-function handleConcentrationCheck(msgOOB)
-    --Debug.chat(msgOOB)
-
-    --local rSource = ActorManager.getActor(msgOOB.sSourceType, msgOOB.sSourceNode);
-    --local nTotal = tonumber(msgOOB.nTotal) or 0;
-    --
-    --DB.setValue(ActorManager.getCTNode(rSource), "initresult", "number", nTotal);
 end
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
@@ -446,6 +433,7 @@ function clearCritAndVitalityLossState(rSource, rTarget)
     oldClearCritState(rSource, rTarget);
 end
 
+--todo change this to replace ActionDamage.applyDamage and then record the total HP before and after running oldApplyDamage, then use that as damage value for vitality/concentration
 function newMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
     if isActualDamage(sDamageType, sTotal) then
         if hitByAttackOrFailedSave(rTarget) then
@@ -513,14 +501,25 @@ end
 --  dice = {  }
 --  mod = 2
 --}
-function forceConcentrationCheck(rTarget, aEffectComp, nDamageTotal)
-    local aSpellSets = DB.getChildren(ActorManager.getCreatureNode(rTarget), "spellset")
+function forceConcentrationCheck(rActor, aEffectComp, nDamageTotal)
+    local aSpellSets = DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")
 
     for _, sEffectSpellset in ipairs(aEffectComp.remainder) do
         for _, nSpellset in pairs(aSpellSets) do
             if (sEffectSpellset == DB.getValue(nSpellset, "label", "")) then
-                GameSystem.performConcentrationCheck(nil, rTarget, nSpellset);
+                GameSystem.performConcentrationCheck(nil, rActor, nSpellset);
             end
         end
     end
+end
+
+function handleConcentrationCheck(rSource, rTarget, rRoll)
+    Debug.chat(rSource, rRoll)
+
+    local rMessage = ActionsManager.createActionMessage(rSource, rRoll);
+    Comm.deliverChatMessage(rMessage);
+    --local rSource = ActorManager.getActor(msgOOB.sSourceType, msgOOB.sSourceNode);
+    --local nTotal = tonumber(msgOOB.nTotal) or 0;
+    --
+    --DB.setValue(ActorManager.getCTNode(rSource), "initresult", "number", nTotal);
 end
