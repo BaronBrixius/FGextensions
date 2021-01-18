@@ -252,13 +252,15 @@
                     <top offset="4" />
                 </anchored>
             </icon_usepower>
-            <number_chartotalnomod name="cost">
-<!--                number_linked.lua -->
+
+            <!--            Make This a Modifiable Number cuz omg that'd be annoying otherwise-->
+            <number_chartotal name="cost">
+                <!--                number_linked.lua -->
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
-            </number_chartotalnomod>
+            </number_chartotal>
             <button_spellaction name="castbutton">
                 <anchored>
                     <left parent="topanchor" anchor="right" relation="relative" offset="15" />

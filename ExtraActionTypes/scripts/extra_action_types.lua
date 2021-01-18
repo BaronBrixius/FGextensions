@@ -1,7 +1,8 @@
-
 -- TODO FHEAL temp health
 -- TODO move Beat By text here
--- TODO aura mod throws fits on removal
+-- TODO look into compound hotkeys (multiple actions in one press)
+-- TODO mirror image give to Aaron
+-- TODO concentration checks automatic grab spell list id and apply that to effect "Concentrating list 1"
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -44,7 +45,7 @@ function onInit()
     ActionSave.applySave = applySaveStalwartAndVitality;    --also Stalwart
 
     oldMessageDamage = ActionDamage.messageDamage;
-    ActionDamage.messageDamage = messageDamageAndClearVitalityLossState;
+    ActionDamage.messageDamage = newMessageDamage;
 
     oldApplyAttack = ActionAttack.applyAttack;
     ActionAttack.applyAttack = applyAttackAndSetVitalityLossState;
@@ -55,8 +56,23 @@ function onInit()
     -- Auto Identify
     oldAddItemToList = ItemManager.addItemToList;
     ItemManager.addItemToList = newAddItemToList;
+    OptionsManager.registerOption2("AUTOIDENTIFY", false, "option_header_game", "option_label_AUTOIDENTIFY", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
 
-    OptionsManager.registerOption2("AUTOIDENTIFY", false, "option_header_game", "option_label_AUTOIDENTIFY", "option_entry_cycler", { labels = "option_val_on", values="on", baselabel = "option_val_off", baseval="off", default="off"});
+    -- Auto Concentration
+    --ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
+
+    --Debug.console(ActionsManager.aResultHandlers);
+
+    --ActionsManager.decodeActors = decodeActors;
+end
+
+function handleConcentrationCheck(msgOOB)
+    --Debug.chat(msgOOB)
+
+    --local rSource = ActorManager.getActor(msgOOB.sSourceType, msgOOB.sSourceNode);
+    --local nTotal = tonumber(msgOOB.nTotal) or 0;
+    --
+    --DB.setValue(ActorManager.getCTNode(rSource), "initresult", "number", nTotal);
 end
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
@@ -430,25 +446,50 @@ function clearCritAndVitalityLossState(rSource, rTarget)
     oldClearCritState(rSource, rTarget);
 end
 
-function messageDamageAndClearVitalityLossState(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
-    if sDamageType ~= "Heal" and sDamageType ~= "Temporary hit points" then
-        if getVitalityLossState(rTarget) then
+function newMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
+    if isActualDamage(sDamageType, sTotal) then
+        if hitByAttackOrFailedSave(rTarget) then
             setVitalityLossState(rTarget, false);
+            clearVitalityEffects(rTarget, sDamageType, sTotal);
+        end
 
-            if tonumber(sTotal) and tonumber(sTotal) > 0 then
-                for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
-                    if string.find(DB.getValue(nodeEffect, "label", ""), "VITALITY;") then
-                        EffectManager.expireEffect(rTarget, nodeEffect, 0);
-                    end
-                end
+        local aConcentrationEffects = getConcentrationEffects(rTarget);
+        for _, aEffectComp in ipairs(aConcentrationEffects) do
+            forceConcentrationCheck(rTarget, aEffectComp, tonumber(sTotal))
+        end
+    end
+    oldMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
+end
+
+function getConcentrationEffects(rTarget)
+    local aConcentrationEffects = {};
+
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        for _, sEffectComp in ipairs(EffectManager.parseEffect(DB.getValue(nodeEffect, "label", ""))) do
+            local rEffectComp = EffectManager35E.parseEffectComp(sEffectComp);
+            if rEffectComp.type:lower() == "concentration" then
+                table.insert(aConcentrationEffects, rEffectComp);
             end
         end
     end
 
-    oldMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
+    return aConcentrationEffects;
 end
 
-function getVitalityLossState(rVitalActor)
+function isActualDamage(sDamageType, sTotal)
+    -- fixme damage is 0 if blocked by temp hp
+    return (sDamageType ~= "Heal" and sDamageType ~= "Temporary hit points") and (tonumber(sTotal) and tonumber(sTotal) > 0);
+end
+
+function clearVitalityEffects(rTarget)
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "vitality;", 1, true) then
+            EffectManager.expireEffect(rTarget, nodeEffect, 0);
+        end
+    end
+end
+
+function hitByAttackOrFailedSave(rVitalActor)
     local sVitalCT = ActorManager.getCreatureNodeName(rVitalActor);
     if sVitalCT == "" then
         return ;
@@ -462,4 +503,24 @@ function setVitalityLossState(rVitalActor, bVitalityLossState)
         return ;
     end
     aVitalityLossState[sVitalCT] = bVitalityLossState;
+end
+
+--example
+--aEffectComp {
+--  type = Concentration
+--  remainder = { #1 = Abilities },
+--  original = Concentration: 2 Abilities
+--  dice = {  }
+--  mod = 2
+--}
+function forceConcentrationCheck(rTarget, aEffectComp, nDamageTotal)
+    local aSpellSets = DB.getChildren(ActorManager.getCreatureNode(rTarget), "spellset")
+
+    for _, sEffectSpellset in ipairs(aEffectComp.remainder) do
+        for _, nSpellset in pairs(aSpellSets) do
+            if (sEffectSpellset == DB.getValue(nSpellset, "label", "")) then
+                GameSystem.performConcentrationCheck(nil, rTarget, nSpellset);
+            end
+        end
+    end
 end
