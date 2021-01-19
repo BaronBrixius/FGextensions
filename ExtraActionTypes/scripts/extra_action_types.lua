@@ -13,6 +13,7 @@ local oldMessageDamage;
 local oldApplyAttack;
 local oldClearCritState;
 local oldAddItemToList;
+local oldPerformAction;
 
 function onInit()
     -- Demoralize
@@ -59,7 +60,9 @@ function onInit()
     OptionsManager.registerOption2("AUTOIDENTIFY", false, "option_header_game", "option_label_AUTOIDENTIFY", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
 
     -- Auto Concentration
-    --ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
+    oldPerformAction = ActionsManager.performAction;
+    ActionsManager.performAction = newPerformAction;
+    ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
 end
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
@@ -436,9 +439,9 @@ end
 --todo change this to replace ActionDamage.applyDamage and then record the total HP before and after running oldApplyDamage, then use that as damage value for vitality/concentration
 function newMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
     if isActualDamage(sDamageType, sTotal) then
-        if hitByAttackOrFailedSave(rTarget) then
+        if wasHitByAttackOrFailedSave(rTarget) then
             setVitalityLossState(rTarget, false);
-            clearVitalityEffects(rTarget, sDamageType, sTotal);
+            removeVitalityEffects(rTarget, sDamageType, sTotal);
         end
 
         local aConcentrationEffects = getConcentrationEffects(rTarget);
@@ -446,6 +449,7 @@ function newMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, s
             forceConcentrationCheck(rTarget, aEffectComp, tonumber(sTotal))
         end
     end
+
     oldMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
 end
 
@@ -469,7 +473,7 @@ function isActualDamage(sDamageType, sTotal)
     return (sDamageType ~= "Heal" and sDamageType ~= "Temporary hit points") and (tonumber(sTotal) and tonumber(sTotal) > 0);
 end
 
-function clearVitalityEffects(rTarget)
+function removeVitalityEffects(rTarget)
     for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
         if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "vitality;", 1, true) then
             EffectManager.expireEffect(rTarget, nodeEffect, 0);
@@ -477,7 +481,7 @@ function clearVitalityEffects(rTarget)
     end
 end
 
-function hitByAttackOrFailedSave(rVitalActor)
+function wasHitByAttackOrFailedSave(rVitalActor)
     local sVitalCT = ActorManager.getCreatureNodeName(rVitalActor);
     if sVitalCT == "" then
         return ;
@@ -501,25 +505,44 @@ end
 --  dice = {  }
 --  mod = 2
 --}
+
+local nConcentrationDC;
 function forceConcentrationCheck(rActor, aEffectComp, nDamageTotal)
     local aSpellSets = DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")
 
     for _, sEffectSpellset in ipairs(aEffectComp.remainder) do
         for _, nSpellset in pairs(aSpellSets) do
             if (sEffectSpellset == DB.getValue(nSpellset, "label", "")) then
+                nConcentrationDC = 10 + aEffectComp.mod + nDamageTotal;
                 GameSystem.performConcentrationCheck(nil, rActor, nSpellset);
             end
         end
     end
 end
 
-function handleConcentrationCheck(rSource, rTarget, rRoll)
-    Debug.chat(rSource, rRoll)
+function newPerformAction(draginfo, rActor, rRoll)
+    if rRoll.sType == "concentration" and nConcentrationDC then
+        rRoll.nTarget = nConcentrationDC;
+        nConcentrationDC = nil;
+    end
 
+    oldPerformAction(draginfo, rActor, rRoll)
+end
+
+function handleConcentrationCheck(rSource, rTarget, rRoll)
     local rMessage = ActionsManager.createActionMessage(rSource, rRoll);
+
+    if rRoll.nTarget then
+        local nTotal = ActionsManager.total(rRoll);
+        local nTargetDC = tonumber(rRoll.nTarget) or 0;
+
+        rMessage.text = rMessage.text .. " (vs. DC " .. nTargetDC .. ")";
+        if nTotal >= nTargetDC then
+            rMessage.text = rMessage.text .. " [SUCCESS]";
+        else
+            rMessage.text = rMessage.text .. " [FAILURE]";
+        end
+    end
+
     Comm.deliverChatMessage(rMessage);
-    --local rSource = ActorManager.getActor(msgOOB.sSourceType, msgOOB.sSourceNode);
-    --local nTotal = tonumber(msgOOB.nTotal) or 0;
-    --
-    --DB.setValue(ActorManager.getCTNode(rSource), "initresult", "number", nTotal);
 end
