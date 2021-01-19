@@ -2,14 +2,12 @@
 -- TODO move Beat By text here
 -- TODO look into compound hotkeys (multiple actions in one press)
 -- TODO mirror image give to Aaron
--- TODO concentration checks calculate DC and check against roll (automatic roll already set up)
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
 local oldApplyDamage;
 local oldEndTurn;
 local oldCustomOnEffectAddIgnoreCheck;
-local oldMessageDamage;
 local oldApplyAttack;
 local oldClearCritState;
 local oldAddItemToList;
@@ -32,7 +30,7 @@ function onInit()
 
     -- Temp HP Changes
     oldApplyDamage = ActionDamage.applyDamage;
-    ActionDamage.applyDamage = tempHPOverrides;
+    ActionDamage.applyDamage = newApplyDamage;
 
     -- Effect Expires At End Of Turn
     oldEndTurn = EffectManager.fCustomOnEffectEndTurn
@@ -44,9 +42,6 @@ function onInit()
 
     -- Vitality
     ActionSave.applySave = applySaveStalwartAndVitality;    --also Stalwart
-
-    oldMessageDamage = ActionDamage.messageDamage;
-    ActionDamage.messageDamage = newMessageDamage;
 
     oldApplyAttack = ActionAttack.applyAttack;
     ActionAttack.applyAttack = applyAttackAndSetVitalityLossState;
@@ -93,7 +88,7 @@ function newEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
         oldEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit);
     end
 
-    --If an effect's duration is less than 1, expire it (e.g. set duration as 1.5 to last 1 round but expire at end of turn)
+    --If an effect's duration is less than 1, expire it (e.g. set duration as 1.5 for it to last 1 round but expire at end of turn)
     local nDuration = DB.getValue(nodeEffect, "duration");
     if nDuration > 0 and nDuration < 1 then
         EffectManager.expireEffect(nodeActor, nodeEffect);
@@ -101,34 +96,61 @@ function newEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
     end
 end
 
-function tempHPOverrides(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
-    local nNewTotal = nTotal;
-    if string.match(sDamage, "%[HEAL") and string.match(sDamage, "%[TEMP%]") then
-        local sTargetType, nodeTarget = ActorManager.getTypeAndNode(rTarget);
-        if sTargetType ~= "pc" and sTargetType ~= "ct" then
-            return ;
-        end
-
-        local nTempHP, nWounds;
-        if sTargetType == "pc" then
-            nTempHP = DB.getValue(nodeTarget, "hp.temporary", 0);
-            nWounds = DB.getValue(nodeTarget, "hp.wounds", 0);
-        else
-            nTempHP = DB.getValue(nodeTarget, "hptemp", 0);
-            nWounds = DB.getValue(nodeTarget, "wounds", 0);
-        end
-
-        --Invigorate cannot raise a target's total (temp + current) hit points above their max hit points
-        if string.match(sDamage, "%[INVIGORATE%]") then
-            nNewTotal = math.min(nNewTotal, nWounds);
-        end
-
-        if not string.match(sDamage, "%[STACKING%]") then
-            nNewTotal = math.max(nNewTotal - nTempHP, 0);
-        end
-    end
+function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
+    local nNewTotal = applyTempHPChanges(nTotal, rTarget, sDamage);
+    local nHealthBeforeAttack = getTotalHP(rTarget);
 
     oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nNewTotal);
+
+    local nHealthAfterAttack = getTotalHP(rTarget);
+    local nHealthLost = nHealthBeforeAttack - nHealthAfterAttack;
+
+    if nHealthLost > 0 then
+        if wasHitByAttackOrFailedSave(rTarget) then
+            setVitalityLossState(rTarget, false);
+            removeVitalityEffects(rTarget);
+        end
+
+        for _, aEffectComp in ipairs(getConcentrationEffects(rTarget)) do
+            forceConcentrationCheck(rTarget, aEffectComp, nHealthLost)
+        end
+    end
+end
+
+function getTotalHP(rActor)
+    local nodeTarget = ActorManager.getCreatureNode(rActor);
+    return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0) + DB.getValue(nodeTarget, "hp.temporary", 0);
+end
+
+function applyTempHPChanges(nTotal, rTarget, sDamage)
+    if not string.match(sDamage, "%[TEMP%]") then --string.match(sDamage, "%[HEAL") and
+        return nTotal;
+    end
+
+    local nNewTotal = nTotal;
+    local sTargetType, nodeTarget = ActorManager.getTypeAndNode(rTarget);
+    if sTargetType ~= "pc" and sTargetType ~= "ct" then
+        return ;
+    end
+
+    local nTempHP, nWounds;
+    if sTargetType == "pc" then
+        nTempHP = DB.getValue(nodeTarget, "hp.temporary", 0);
+        nWounds = DB.getValue(nodeTarget, "hp.wounds", 0);
+    else
+        nTempHP = DB.getValue(nodeTarget, "hptemp", 0);
+        nWounds = DB.getValue(nodeTarget, "wounds", 0);
+    end
+
+    --Invigorate cannot raise a target's total (temp + current) hit points above their max hit points
+    if string.match(sDamage, "%[INVIGORATE%]") then
+        nNewTotal = math.min(nNewTotal, nWounds);
+    end
+
+    if not string.match(sDamage, "%[STACKING%]") then
+        nNewTotal = math.max(nNewTotal - nTempHP, 0);
+    end
+    return nNewTotal;
 end
 
 function newGetSpellActionDemoralize(rActor, nodeAction, sSubRoll)
@@ -303,7 +325,7 @@ function useTargetsInitIfLabelled(nodeCT, rNewEffect)
         end
     end
 
-    --compatibility safeguard
+    --compatibility
     if oldCustomOnEffectAddIgnoreCheck then
         return oldCustomOnEffectAddIgnoreCheck(nodeCT, rNewEffect);
     end
@@ -436,23 +458,6 @@ function clearCritAndVitalityLossState(rSource, rTarget)
     oldClearCritState(rSource, rTarget);
 end
 
---todo change this to replace ActionDamage.applyDamage and then record the total HP before and after running oldApplyDamage, then use that as damage value for vitality/concentration
-function newMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
-    if isActualDamage(sDamageType, sTotal) then
-        if wasHitByAttackOrFailedSave(rTarget) then
-            setVitalityLossState(rTarget, false);
-            removeVitalityEffects(rTarget, sDamageType, sTotal);
-        end
-
-        local aConcentrationEffects = getConcentrationEffects(rTarget);
-        for _, aEffectComp in ipairs(aConcentrationEffects) do
-            forceConcentrationCheck(rTarget, aEffectComp, tonumber(sTotal))
-        end
-    end
-
-    oldMessageDamage(rSource, rTarget, bSecret, sDamageType, sDamageDesc, sTotal, sExtraResult)
-end
-
 function getConcentrationEffects(rTarget)
     local aConcentrationEffects = {};
 
@@ -466,11 +471,6 @@ function getConcentrationEffects(rTarget)
     end
 
     return aConcentrationEffects;
-end
-
-function isActualDamage(sDamageType, sTotal)
-    -- fixme damage is 0 if blocked by temp hp
-    return (sDamageType ~= "Heal" and sDamageType ~= "Temporary hit points") and (tonumber(sTotal) and tonumber(sTotal) > 0);
 end
 
 function removeVitalityEffects(rTarget)
@@ -497,23 +497,14 @@ function setVitalityLossState(rVitalActor, bVitalityLossState)
     aVitalityLossState[sVitalCT] = bVitalityLossState;
 end
 
---example
---aEffectComp {
---  type = Concentration
---  remainder = { #1 = Abilities },
---  original = Concentration: 2 Abilities
---  dice = {  }
---  mod = 2
---}
-
 local nConcentrationDC;
-function forceConcentrationCheck(rActor, aEffectComp, nDamageTotal)
+function forceConcentrationCheck(rActor, aEffectComp, nTriggeringModifier)
     local aSpellSets = DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")
 
     for _, sEffectSpellset in ipairs(aEffectComp.remainder) do
         for _, nSpellset in pairs(aSpellSets) do
             if (sEffectSpellset == DB.getValue(nSpellset, "label", "")) then
-                nConcentrationDC = 10 + aEffectComp.mod + nDamageTotal;
+                nConcentrationDC = 10 + aEffectComp.mod + nTriggeringModifier;
                 GameSystem.performConcentrationCheck(nil, rActor, nSpellset);
             end
         end
