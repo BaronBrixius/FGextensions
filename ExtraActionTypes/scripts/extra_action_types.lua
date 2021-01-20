@@ -496,15 +496,15 @@ function setVitalityLossState(rVitalActor, bVitalityLossState)
 end
 
 local nConcentrationDC;
+local nConcentrationEffect;
 function forceConcentrationCheck(rActor, rConcentrationEffect, nMiscModifier)
     for _, sEffectComp in ipairs(EffectManager.parseEffect(DB.getValue(rConcentrationEffect, "label", ""))) do
         local rEffectComp = EffectManager35E.parseEffectComp(sEffectComp);
-        for _, sEffectSpellset in ipairs(rEffectComp.remainder) do
-            for _, rCreatureSpellset in pairs(DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")) do
-                if (sEffectSpellset == DB.getValue(rCreatureSpellset, "label", "")) then
-                    nConcentrationDC = 10 + rEffectComp.mod + nMiscModifier;
-                    GameSystem.performConcentrationCheck(nil, rActor, rCreatureSpellset);
-                end
+        for _, rCreatureSpellset in pairs(DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")) do
+            if (rEffectComp.remainder[1] == DB.getValue(rCreatureSpellset, "label", "")) then
+                nConcentrationDC = 10 + rEffectComp.mod + nMiscModifier;
+                nConcentrationEffect = rConcentrationEffect;
+                GameSystem.performConcentrationCheck(nil, rActor, rCreatureSpellset);
             end
         end
     end
@@ -531,8 +531,11 @@ function handleConcentrationCheck(rSource, rTarget, rRoll)
             rMessage.text = rMessage.text .. " [SUCCESS]";
         else
             rMessage.text = rMessage.text .. " [FAILURE]";
+            EffectManager.expireEffect(rSource, nConcentrationEffect, 0);
         end
+        nConcentrationEffect = nil;
     end
+
 
     Comm.deliverChatMessage(rMessage);
 end
