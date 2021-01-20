@@ -111,8 +111,8 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
             removeVitalityEffects(rTarget);
         end
 
-        for _, aEffectComp in ipairs(getConcentrationEffects(rTarget)) do
-            forceConcentrationCheck(rTarget, aEffectComp, nHealthLost)
+        for _, rEffect in ipairs(getConcentrationEffects(rTarget)) do
+            forceConcentrationCheck(rTarget, rEffect, nHealthLost)
         end
     end
 end
@@ -123,7 +123,8 @@ function getTotalHP(rActor)
 end
 
 function applyTempHPChanges(nTotal, rTarget, sDamage)
-    if not string.match(sDamage, "%[TEMP%]") then --string.match(sDamage, "%[HEAL") and
+    if not string.match(sDamage, "%[TEMP%]") then
+        --string.match(sDamage, "%[HEAL") and
         return nTotal;
     end
 
@@ -462,11 +463,8 @@ function getConcentrationEffects(rTarget)
     local aConcentrationEffects = {};
 
     for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
-        for _, sEffectComp in ipairs(EffectManager.parseEffect(DB.getValue(nodeEffect, "label", ""))) do
-            local rEffectComp = EffectManager35E.parseEffectComp(sEffectComp);
-            if rEffectComp.type:lower() == "concentration" then
-                table.insert(aConcentrationEffects, rEffectComp);
-            end
+        if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "concentration:", 1, true) then
+            table.insert(aConcentrationEffects, nodeEffect);
         end
     end
 
@@ -498,14 +496,15 @@ function setVitalityLossState(rVitalActor, bVitalityLossState)
 end
 
 local nConcentrationDC;
-function forceConcentrationCheck(rActor, aEffectComp, nTriggeringModifier)
-    local aSpellSets = DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")
-
-    for _, sEffectSpellset in ipairs(aEffectComp.remainder) do
-        for _, nSpellset in pairs(aSpellSets) do
-            if (sEffectSpellset == DB.getValue(nSpellset, "label", "")) then
-                nConcentrationDC = 10 + aEffectComp.mod + nTriggeringModifier;
-                GameSystem.performConcentrationCheck(nil, rActor, nSpellset);
+function forceConcentrationCheck(rActor, rConcentrationEffect, nMiscModifier)
+    for _, sEffectComp in ipairs(EffectManager.parseEffect(DB.getValue(rConcentrationEffect, "label", ""))) do
+        local rEffectComp = EffectManager35E.parseEffectComp(sEffectComp);
+        for _, sEffectSpellset in ipairs(rEffectComp.remainder) do
+            for _, rCreatureSpellset in pairs(DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")) do
+                if (sEffectSpellset == DB.getValue(rCreatureSpellset, "label", "")) then
+                    nConcentrationDC = 10 + rEffectComp.mod + nMiscModifier;
+                    GameSystem.performConcentrationCheck(nil, rActor, rCreatureSpellset);
+                end
             end
         end
     end
