@@ -1,5 +1,4 @@
 -- TODO FHEAL temp health
--- TODO move Beat By text here
 -- TODO look into compound hotkeys (multiple actions in one press)
 -- TODO mirror image give to Aaron
 
@@ -58,6 +57,11 @@ function onInit()
     oldPerformAction = ActionsManager.performAction;
     ActionsManager.performAction = newPerformAction;
     ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
+
+    -- Combo Hotkeys
+    OptionsManager.registerOption2("COMBOHOTKEYS", true, "option_header_client", "option_label_COMBOHOTKEYS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
+    Interface.onHotkeyDrop = onHotkeyDrop;
+    Interface.onHotkeyActivated = onHotkey;
 end
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
@@ -536,6 +540,30 @@ function handleConcentrationCheck(rSource, rTarget, rRoll)
         nConcentrationEffect = nil;
     end
 
-
     Comm.deliverChatMessage(rMessage);
+end
+
+
+local oldDraginfo = { };
+
+function onHotkey(draginfo)
+    if #oldDraginfo > 0 then
+        oldDraginfo = { };
+    end
+end
+
+function onHotkeyDrop(draginfo)
+    if OptionsManager.getOption("COMBOHOTKEYS"):lower() ~= "on" then
+        return;
+    end
+
+    table.insert(oldDraginfo, { draginfo.getSlotType(), draginfo.getNumberData(), draginfo.getStringData() });
+
+    for i = 1, #oldDraginfo do
+        draginfo.setSlot(i);
+
+        draginfo.setSlotType(oldDraginfo[i][1]);
+        draginfo.setNumberData(oldDraginfo[i][2]);
+        draginfo.setStringData(oldDraginfo[i][3]);
+    end
 end

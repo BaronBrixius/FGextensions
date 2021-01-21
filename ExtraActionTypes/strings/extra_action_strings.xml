@@ -6,4 +6,5 @@
     <string name="power_label_demoralize">Demoralize</string>
 
     <string name="option_label_AUTOIDENTIFY">Party: Auto-identify Party Sheet Items</string>
+    <string name="option_label_COMBOHOTKEYS">Hotkeys: Combo Actions</string>
 </root>
