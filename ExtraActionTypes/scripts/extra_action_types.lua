@@ -1,5 +1,4 @@
 -- TODO FHEAL temp health
--- TODO look into compound hotkeys (multiple actions in one press)
 -- TODO mirror image give to Aaron
 
 local oldOnSpellAction;
@@ -67,20 +66,7 @@ end
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
     local nodeNew = oldAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount);
 
-    if not User.isHost() then
-        return nodeNew;
-    end
-
-    if OptionsManager.getOption("AUTOIDENTIFY"):lower() ~= "on" then
-        return nodeNew;
-    end
-
-    local nodeList;
-    if type(vList) == "string" then
-        nodeList = DB.createNode(vList);
-    end
-
-    if nodeList and ItemManager.getItemSourceType(nodeList) == "partysheet" then
+    if User.isHost() and OptionsManager.getOption("AUTOIDENTIFY"):lower() == "on" and type(vList) == "string" and ItemManager.getItemSourceType(DB.createNode(vList)) == "partysheet" then
         DB.setValue(nodeNew, "isidentified", "number", 1);
     end
 
@@ -101,13 +87,12 @@ function newEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
 end
 
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
-    local nNewTotal = applyTempHPChanges(nTotal, rTarget, sDamage);
     local nHealthBeforeAttack = getTotalHP(rTarget);
 
+    local nNewTotal = applyTempHPChanges(nTotal, rTarget, sDamage);
     oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nNewTotal);
 
-    local nHealthAfterAttack = getTotalHP(rTarget);
-    local nHealthLost = nHealthBeforeAttack - nHealthAfterAttack;
+    local nHealthLost = nHealthBeforeAttack - getTotalHP(rTarget);
 
     if nHealthLost > 0 then
         if wasHitByAttackOrFailedSave(rTarget) then
@@ -543,7 +528,6 @@ function handleConcentrationCheck(rSource, rTarget, rRoll)
     Comm.deliverChatMessage(rMessage);
 end
 
-
 local oldDraginfo = { };
 
 function onHotkey(draginfo)
@@ -554,7 +538,7 @@ end
 
 function onHotkeyDrop(draginfo)
     if OptionsManager.getOption("COMBOHOTKEYS"):lower() ~= "on" then
-        return;
+        return ;
     end
 
     table.insert(oldDraginfo, { draginfo.getSlotType(), draginfo.getNumberData(), draginfo.getStringData() });
