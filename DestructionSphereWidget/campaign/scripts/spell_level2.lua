@@ -27,6 +27,7 @@ end
 
 function onSpellCounterUpdate()
 	--		DB.setValue(nodeSpellClass, "pointsused", "number", 0);
+	Debug.chat("here")
 	windowlist.window.onSpellCounterUpdate();
 end
 
@@ -40,12 +41,16 @@ function onClickDown(button, x, y)
 	return true;
 end
 
-function onClickRelease(button, x, y)
-	if DB.getChildCount(spells.getDatabaseNode(), "") == 0 then
-		spells.addEntry(true);
-		return true;
-	end
+function onValueChanged()
+	Debug.chat("here")
+end
 
-	spells.setVisible(not spells.isVisible());
+function onClickRelease(button, x, y)
+	--if DB.getChildCount(spells.getDatabaseNode(), "") == 0 then
+	--	spells.addEntry(true);
+	--	return true;
+	--end
+	--
+	--spells.setVisible(not spells.isVisible());
 	return true;
 end

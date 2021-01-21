@@ -4,11 +4,10 @@
 --
 
 function setFilter(bFilter)
-
 end
 
 function getFilter()
-	return bShow;
+	return false;
 end
 
 function onInit()
@@ -21,18 +20,7 @@ function onInit()
 		registerMenuItem(Interface.getString("menu_addspelldamage"), "radial_damage", 3, 3);
 		registerMenuItem(Interface.getString("menu_addspellheal"), "radial_heal", 3, 4);
 		registerMenuItem(Interface.getString("menu_addspelleffect"), "radial_effect", 3, 5);
-		
-		registerMenuItem(Interface.getString("menu_reparsespell"), "textlist", 4);
 	end
-
-	-- Check to see if we should automatically parse spell description
-	local nodeSpell = getDatabaseNode();
-	local nParse = DB.getValue(nodeSpell, "parse", 0);
-	if nParse ~= 0 then
-		DB.setValue(nodeSpell, "parse", "number", 0);
-		SpellManager.parseSpell(nodeSpell);
-	end
-
 end
 
 function update(bEditMode)
@@ -109,6 +97,7 @@ end
 
 function activatePower()
 	local nodeSpell = getDatabaseNode();
+	Debug.chat(nodeSpell)
 	if nodeSpell then
 		ChatManager.Message(getDescription(), true, ActorManager.getActor("", nodeSpell.getChild(".....")));
 	end

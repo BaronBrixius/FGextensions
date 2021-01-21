@@ -42,12 +42,17 @@
             <anchor_column name="columnanchor" />
 
 
-            <subwindow name="cast">
+            <subwindow name="cast_window">
                 <anchored>
                     <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                     <left offset="10" />
                     <right offset="-10" />
                 </anchored>
+                <script>
+                    function printWin()
+                        Debug.chat("Win");
+                    end
+                </script>
                 <class>cast_header</class>
                 <center />
                 <activate />
@@ -71,6 +76,76 @@
             </list_charabilities>
         </sheetdata>
     </windowclass>
+
+
+    <windowclass name="cast_header">
+        <script file="campaign/scripts/destruction_cast.lua" />
+        <frame>referenceblock-text3</frame>
+        <margins control="20,20,20,20" />
+        <sheetdata>
+            <genericcontrol name="topanchor">
+                <anchored position="insidetopleft" height="0" />
+                <disabled />
+                <invisible />
+            </genericcontrol>
+            <icon_usepower name="usepower">
+                <anchored width="17" height="17">
+                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                    <top offset="4" />
+                </anchored>
+            </icon_usepower>
+
+            <number_chartotal name="cost">
+                <!--                number_linked.lua -->
+                <anchored width="20" height="20">
+                    <top offset="2" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="5" />
+                </anchored>
+            </number_chartotal>
+            <button_roll name="castbutton">
+                <script>
+                    function action(draginfo)
+                    local sSubRoll = nil;
+                    if subroll then
+                    sSubRoll = subroll[1];
+                    end
+
+                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);
+                    end
+
+                    function onButtonPress()
+                    action();
+                    end
+
+                    function onDragStart(button, x, y, draginfo)
+                    action(draginfo);
+                    return true;
+                    end
+                </script>
+                <anchored>
+                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                    <top offset="2" />
+                </anchored>
+            </button_roll>
+            <label name="castlabel">
+                <anchored>
+                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
+                    <top offset="2" />
+                </anchored>
+                <static textres="spell_label_cast" />
+            </label>
+
+
+            <genericcontrol name="castanchor">
+                <anchored>
+                    <top parent="topanchor" anchor="bottom" offset="40" />
+                    <left offset="0" />
+                </anchored>
+                <invisible />
+            </genericcontrol>
+        </sheetdata>
+    </windowclass>
+
 
     <windowclass name="shape_spell">
         <margins control="0,0,0,2" />
@@ -129,22 +204,18 @@
     <windowclass name="shape_header">
         <margins control="0,0,0,2" />
         <script>
-            function activatePower()
-            parentcontrol.window.activatePower();
-            end
-
             function usePower()
-            parentcontrol.window.usePower();
+                parentcontrol.window.usePower();
             end
 
             function onSpellCounterUpdate()
-            parentcontrol.window.windowlist.window.onSpellCounterUpdate();
+                parentcontrol.window.windowlist.window.onSpellCounterUpdate();
             end
         </script>
         <sheetdata>
             <anchor_column name="hanchor" />
 
-            <buttonfield name="usespell" source="cast.shape">
+            <buttonfield name="usespell" source=".selected">
                 <anchored width="12" height="12">
                     <top offset="7" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
@@ -153,30 +224,20 @@
                 <state icon="button_checkon" />
                 <script>
                     function onInit()
-                    onValueChanged();
+                        onValueChanged();
                     end
 
                     function onValueChanged()
-                    if getValue() == 1 then
-                    window.usepower.setColor("FF000000");
-                    else
-                    window.usepower.setColor("7F000000");
-                    end
+                        window.parentcontrol.window.windowlist.window.cast_window.printWin();
+                        window.parentcontrol.window.windowlist.window.cast_window.subwindow.createDisplay();
                     end
                 </script>
             </buttonfield>
-            <icon_usepower name="usepower">
-                <anchored>
-                    <top offset="7" />
-                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
-                </anchored>
-            </icon_usepower>
             <basicnumber name="cost">
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
-                <min>0</min>
             </basicnumber>
             <counter_spell name="counter">
                 <anchored>
@@ -234,58 +295,6 @@
             </string_spell>
         </sheetdata>
     </windowclass>
-
-
-    <windowclass name="cast_header">
-        <script file="campaign/scripts/destruction_cast.lua" />
-        <frame>referenceblock-text3</frame>
-        <margins control="20,20,20,20" />
-        <sheetdata>
-            <genericcontrol name="topanchor">
-                <anchored position="insidetopleft" height="0" />
-                <disabled />
-                <invisible />
-            </genericcontrol>
-            <icon_usepower name="usepower">
-                <anchored width="17" height="17">
-                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
-                    <top offset="4" />
-                </anchored>
-            </icon_usepower>
-
-            <!--            Make This a Modifiable Number cuz omg that'd be annoying otherwise-->
-            <number_chartotal name="cost">
-                <!--                number_linked.lua -->
-                <anchored width="20" height="20">
-                    <top offset="2" />
-                    <left parent="topanchor" anchor="right" relation="relative" offset="5" />
-                </anchored>
-            </number_chartotal>
-            <button_spellaction name="castbutton">
-                <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
-                    <top offset="2" />
-                </anchored>
-            </button_spellaction>
-            <label name="castlabel">
-                <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
-                    <top offset="2" />
-                </anchored>
-                <static textres="spell_label_cast" />
-            </label>
-
-
-            <genericcontrol name="castanchor">
-                <anchored>
-                    <top parent="topanchor" anchor="bottom" offset="40" />
-                    <left offset="0" />
-                </anchored>
-                <invisible />
-            </genericcontrol>
-        </sheetdata>
-    </windowclass>
-
 
     <!--    <template name="icon_usepower">-->
     <!--        <buttoncontrol>-->
@@ -762,7 +771,7 @@
 
             <!--            -->
             <buttoncontrol name="DestructionWidgetButton">
-                <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25"></anchored>
+                <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25" />
                 <state icon="button_roll" pressed="button_roll_down" />
                 <script>
                     function onButtonPress()
