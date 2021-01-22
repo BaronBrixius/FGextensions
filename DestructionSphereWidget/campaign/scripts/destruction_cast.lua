@@ -1,36 +1,46 @@
-local rShape;
-local nType;
-local aOtherSpheres = { };
-
 function onInit()
-    onDataChanged()
+    doWithLock(updateDisplay)
+
+    --getDatabaseNode().getChild("cost").addSource(rShape.cost)
 end
 
 local bDataChangedLock = false;
-function onDataChanged()
+function doWithLock(fFunction, aArguments)
     if bDataChangedLock == true then
-        return ;
+        return false;
     end
     bDataChangedLock = true;
-    updateDisplay();
+
+    fFunction(aArguments)
+
     bDataChangedLock = false;
+    return true;
 end
 
 function setShape(rNewShape)
-    rShape = rNewShape;
-    onDataChanged();
+    doWithLock(clearOtherShapeSelections, rNewShape)
+end
+
+function clearOtherShapeSelections(rSelectedShape)
+    local rSelectedShapeNode = rSelectedShape.getDatabaseNode();
+    for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
+        if v ~= rSelectedShapeNode then
+            DB.setValue(v, ".selected", "number", 0);
+        end
+    end
+end
+
+function retrieveShapeSelection()
+    for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
+        if DB.getValue(v, ".selected", "number", 0) == 1 then
+            return v;
+        end
+    end
+    return nil;
 end
 
 function updateDisplay()
-    for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
-        DB.setValue(v, ".selected", "number", 0);
-    end
-    if rShape then
-        DB.setValue(rShape.getDatabaseNode(), ".selected", "number", 1);
-    end
-
-    createCast();
-
+    updateCast();
 
     --createAttack()
     --createDamage()
@@ -39,8 +49,23 @@ function updateDisplay()
     --createLevelCheck()
 end
 
-function createCast()
+function updateCast()
     --Debug.chat(getDatabaseNode().getChild("destruction_shapes").getChildren())
+    Debug.chat(DB.getValue(retrieveShapeSelection().getChild("cost"), "cast.cost", 0))
+
+    local num = getDatabaseNode().getChild("cost");
+
+    Debug.chat(num)
+
+    local node = retrieveShapeSelection().getChild("cost");
+    if node then
+        num.sources[name] = node;
+        node.onUpdate = sourceUpdate;
+        num.hasSources = true;
+    end
+    --DB.setValue(getDatabaseNode().getChild("cost"), retrieveShapeSelection().getChild("cost"), "number", 0);
+    --Debug.chat(DB.getValue(retrieveShapeSelection().getChild("cost"), "cast.cost", 0).sources)
+
 end
 
 function createAttack()

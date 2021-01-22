@@ -87,12 +87,18 @@
                 </anchored>
             </icon_usepower>
 
-            <number_chartotal name="cost">
+            <number_chartotal name="cost" source="cast.cost">
                 <!--                number_linked.lua -->
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
+<!--                <script>-->
+<!--                    function onInit()-->
+<!--                        addSource(window.retrieveShapeSelection().cast.cost)-->
+<!--                        super.onInit()-->
+<!--                    end-->
+<!--                </script>-->
             </number_chartotal>
             <button_roll name="castbutton">
                 <script>
@@ -184,19 +190,9 @@
                 </anchored>
                 <noscroll />
                 <datasource>.actions</datasource>
-                <class>spell_action6</class>
+                <class>spell_action</class>
                 <invisible />
             </windowlist>
-        </sheetdata>
-    </windowclass>
-
-    <windowclass name="spell_action6">
-        <margins control="0,0,0,5" />
-        <script file="campaign/scripts/spell_action6.lua" />
-        <sheetdata>
-            <button_idelete name="idelete">
-                <bounds>-22,3,20,20</bounds>
-            </button_idelete>
         </sheetdata>
     </windowclass>
     <!--    -->
