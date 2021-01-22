@@ -41,24 +41,17 @@
         <sheetdata>
             <anchor_column name="columnanchor" />
 
-
             <subwindow name="cast_window">
                 <anchored>
                     <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                     <left offset="10" />
                     <right offset="-10" />
                 </anchored>
-                <script>
-                    function printWin()
-                        Debug.chat("Win");
-                    end
-                </script>
                 <class>cast_header</class>
                 <center />
                 <activate />
                 <fastinit />
             </subwindow>
-
 
             <header_column name="header_shape">
                 <static textres="destruction_header_shape" />
@@ -76,7 +69,6 @@
             </list_charabilities>
         </sheetdata>
     </windowclass>
-
 
     <windowclass name="cast_header">
         <script file="campaign/scripts/destruction_cast.lua" />
@@ -192,13 +184,21 @@
                 </anchored>
                 <noscroll />
                 <datasource>.actions</datasource>
-                <class>spell_action</class>
+                <class>spell_action6</class>
                 <invisible />
             </windowlist>
         </sheetdata>
     </windowclass>
 
-
+    <windowclass name="spell_action6">
+        <margins control="0,0,0,5" />
+        <script file="campaign/scripts/spell_action6.lua" />
+        <sheetdata>
+            <button_idelete name="idelete">
+                <bounds>-22,3,20,20</bounds>
+            </button_idelete>
+        </sheetdata>
+    </windowclass>
     <!--    -->
 
     <windowclass name="shape_header">
@@ -228,8 +228,9 @@
                     end
 
                     function onValueChanged()
-                        window.parentcontrol.window.windowlist.window.cast_window.printWin();
-                        window.parentcontrol.window.windowlist.window.cast_window.subwindow.createDisplay();
+                        if getValue() == 1 then
+                            window.parentcontrol.window.windowlist.window.cast_window.subwindow.setShape(window);
+                        end
                     end
                 </script>
             </buttonfield>
@@ -267,9 +268,7 @@
                 <empty textres="library_recordtype_empty_spell" />
                 <script>
                     function onDoubleClick(x, y)
-                    window.activatePower();
-
-                    return true;
+                        DB.setValue(window.getDatabaseNode(), ".selected", "number", 1);
                     end
 
                     function onDragStart(button, x, y, draginfo)
@@ -295,19 +294,6 @@
             </string_spell>
         </sheetdata>
     </windowclass>
-
-    <!--    <template name="icon_usepower">-->
-    <!--        <buttoncontrol>-->
-    <!--            <anchored width="10" height="10" />-->
-    <!--            <icon normal="spell_cast" />-->
-    <!--            <tooltip textres="spell_tooltip_usepower" />-->
-    <!--            <script>-->
-    <!--                function onButtonPress()-->
-    <!--                window.usePower();-->
-    <!--                end-->
-    <!--            </script>-->
-    <!--        </buttoncontrol>-->
-    <!--    </template>-->
 
     <template name="destruction_action_attackbutton">
         <button_spellaction name="attackbutton">
@@ -770,18 +756,12 @@
             </genericcontrol>
 
             <!--            -->
-            <buttoncontrol name="DestructionWidgetButton">
+
+            <linkcontrol name="DestructionWidgetButton">
                 <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25" />
-                <state icon="button_roll" pressed="button_roll_down" />
-                <script>
-                    function onButtonPress()
-                    local w = Interface.openWindow(editor[1], window.getDatabaseNode());
-                    w.main.subwindow.name.setValue(DB.getValue(window.getDatabaseNode(), "...name", ""));
-                    end
-                </script>
-                <tooltip textres="spell_tooltip_cc" />
-                <editor>DestructionWidget</editor>
-            </buttoncontrol>
+<!--                <tooltip textres="spell_tooltip_cc" />-->
+                <class>DestructionWidget</class>
+            </linkcontrol>
             <!--                -->
 
 

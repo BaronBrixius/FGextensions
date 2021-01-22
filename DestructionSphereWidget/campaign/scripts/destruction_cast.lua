@@ -1,8 +1,6 @@
-
-local nShape;
+local rShape;
 local nType;
 local aOtherSpheres = { };
-
 
 function onInit()
     onDataChanged()
@@ -10,37 +8,39 @@ end
 
 local bDataChangedLock = false;
 function onDataChanged()
-    if bDataChangedLock then
+    if bDataChangedLock == true then
         return ;
     end
     bDataChangedLock = true;
-    --if not m_sType then
-    createDisplay();
-    --end
-    if m_sType then
-        updateViews();
-    end
+    updateDisplay();
     bDataChangedLock = false;
 end
 
-function createDisplay()
-    Debug.chat("Super Win")
+function setShape(rNewShape)
+    rShape = rNewShape;
+    onDataChanged();
+end
 
-    local shapesnode = getDatabaseNode().getChild("destruction_shapes");
-    --Debug.chat(shapesnode)
-
-    for k,v in pairs(shapesnode.getChildren()) do
-        Debug.chat(DB.getValue(v, ".selected", 0))
+function updateDisplay()
+    for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
+        DB.setValue(v, ".selected", "number", 0);
+    end
+    if rShape then
+        DB.setValue(rShape.getDatabaseNode(), ".selected", "number", 1);
     end
 
+    createCast();
 
-    --DB.setValue(nodeChar, "encumbrance.armormaxstatbonus", "number", 0);
 
     --createAttack()
     --createDamage()
     --createAttack()
     --createSave()
     --createLevelCheck()
+end
+
+function createCast()
+    --Debug.chat(getDatabaseNode().getChild("destruction_shapes").getChildren())
 end
 
 function createAttack()
@@ -75,9 +75,6 @@ function activatePower()
 end
 
 function onSpellAction(draginfo, nodeAction, sSubRoll)
-
-
-
     createDisplay();
 
 
