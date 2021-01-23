@@ -19,6 +19,25 @@ end
 
 function setShape(rNewShape)
     doWithLock(clearOtherShapeSelections, rNewShape)
+    --updateCost();
+
+    local sShapePath = DB.getPath(rNewShape.getDatabaseNode(), "cost");
+
+    --Debug.chat(string.match(sShapePath, "destruction.*"))
+    for k,v in pairs(self.cost.sources) do
+        if (string.match(k, "shapes", 1, 1)) then
+            --table.remov
+        end
+    end
+    self.cost.addSourceWithOp(string.match(sShapePath, "destruction.*"), "+")
+    --Debug.chat(DB.getValue(rNewShape.getDatabaseNode(), "cost", 0))
+    --Debug.chat(self.cost.sources)
+
+    --Debug.chat(getDatabaseNode().getChildren())
+
+    for k,v in pairs(self.cost.sources) do
+        Debug.chat(k,v)
+    end
 end
 
 function clearOtherShapeSelections(rSelectedShape)
@@ -50,47 +69,60 @@ function updateDisplay()
 end
 
 function updateCast()
+    updateCost()
     --Debug.chat(getDatabaseNode().getChild("destruction_shapes").getChildren())
-    Debug.chat(DB.getValue(retrieveShapeSelection().getChild("cost"), "cast.cost", 0))
+    --Debug.chat(DB.getPath(retrieveShapeSelection().getChild("cost"), "cast.cost"))
 
-    local num = getDatabaseNode().getChild("cost");
+    --local num = getDatabaseNode().getChild("cost");
+    --Debug.chat(num.type)
+    --Debug.chat(num)
 
-    Debug.chat(num)
-
-    local node = retrieveShapeSelection().getChild("cost");
-    if node then
-        num.sources[name] = node;
-        node.onUpdate = sourceUpdate;
-        num.hasSources = true;
-    end
+    --local node = retrieveShapeSelection().getChild("cost");
+    --if node then
+    --    num.sources[name] = node;
+    --    node.onUpdate = sourceUpdate;
+    --    num.hasSources = true;
+    --end
     --DB.setValue(getDatabaseNode().getChild("cost"), retrieveShapeSelection().getChild("cost"), "number", 0);
     --Debug.chat(DB.getValue(retrieveShapeSelection().getChild("cost"), "cast.cost", 0).sources)
 
 end
 
-function createAttack()
-    createControl("destruction_action_attackbutton", "attackbutton");
-    createControl("destruction_action_attackviewlabel", "attackviewlabel");
-    createControl("destruction_action_attackview", "attackview");
+function updateCost()
+    --local nCost = 0;
+    ----Debug.chat(DB.getPath(getDatabaseNode(), "cost").super.addSource)
+    --local nodeShape = retrieveShapeSelection();
+    --if nodeShape then
+    --    --nCost = nCost + DB.getValue(nodeShape, "cost", 0);
+    --end
+    --
+    --DB.setValue(getDatabaseNode(), "cast.cost", "number", nCost);
+
 end
 
-function createLevelCheck()
-    createControl("destruction_action_levelcheckbutton", "levelcheckbutton");
-    createControl("destruction_action_levelcheckviewlabel", "levelcheckviewlabel");
-    createControl("destruction_action_levelcheckview", "levelcheckview");
-end
-
-function createSave()
-    createControl("destruction_action_savebutton", "savebutton");
-    createControl("destruction_action_saveviewlabel", "saveviewlabel");
-    createControl("destruction_action_saveview", "saveview");
-end
-
-function createDamage()
-    createControl("destruction_action_damagebutton", "damagebutton");
-    createControl("destruction_action_damagelabel", "damagelabel");
-    createControl("destruction_action_damageview", "damageview");
-end
+--function createAttack()
+--    createControl("destruction_action_attackbutton", "attackbutton");
+--    createControl("destruction_action_attackviewlabel", "attackviewlabel");
+--    createControl("destruction_action_attackview", "attackview");
+--end
+--
+--function createLevelCheck()
+--    createControl("destruction_action_levelcheckbutton", "levelcheckbutton");
+--    createControl("destruction_action_levelcheckviewlabel", "levelcheckviewlabel");
+--    createControl("destruction_action_levelcheckview", "levelcheckview");
+--end
+--
+--function createSave()
+--    createControl("destruction_action_savebutton", "savebutton");
+--    createControl("destruction_action_saveviewlabel", "saveviewlabel");
+--    createControl("destruction_action_saveview", "saveview");
+--end
+--
+--function createDamage()
+--    createControl("destruction_action_damagebutton", "damagebutton");
+--    createControl("destruction_action_damagelabel", "damagelabel");
+--    createControl("destruction_action_damageview", "damageview");
+--end
 
 function activatePower()
     local nodeSpell = getDatabaseNode();
@@ -100,7 +132,7 @@ function activatePower()
 end
 
 function onSpellAction(draginfo, nodeAction, sSubRoll)
-    createDisplay();
+    --createDisplay();
 
 
     --if not nodeAction then
@@ -202,3 +234,4 @@ end
 function onSpellCounterUpdate()
     Debug.chat('spellcounterupdate')
 end
+

@@ -93,12 +93,6 @@
                     <top offset="2" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
-<!--                <script>-->
-<!--                    function onInit()-->
-<!--                        addSource(window.retrieveShapeSelection().cast.cost)-->
-<!--                        super.onInit()-->
-<!--                    end-->
-<!--                </script>-->
             </number_chartotal>
             <button_roll name="castbutton">
                 <script>
@@ -230,11 +224,23 @@
                     end
                 </script>
             </buttonfield>
-            <basicnumber name="cost">
+            <basicnumber name="costfield" source="cost">
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
+<!--                <script>-->
+<!--                    function onInit()-->
+<!--                        DB.addHandler(DB.getPath(window.getDatabaseNode(), ".cost"), "onUpdate", onUpdate);-->
+<!--                    end-->
+
+<!--                    function onUpdate()-->
+<!--                        Debug.chat("here")-->
+<!--                        if DB.getValue(window.getDatabaseNode(), ".selected") then-->
+<!--                            window.parentcontrol.window.windowlist.window.cast_window.subwindow.updateCost();-->
+<!--                        end-->
+<!--                    end-->
+<!--                </script>-->
             </basicnumber>
             <counter_spell name="counter">
                 <anchored>
