@@ -48,7 +48,7 @@ function clearOtherShapeSelections(rSelectedShape)
     end
 end
 
-function retrieveShapeSelection()
+function getShape()
     for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
         if DB.getValue(v, ".selected", "number", 0) == 1 then
             return v;
@@ -58,13 +58,14 @@ function retrieveShapeSelection()
 end
 
 function updateDisplay()
-    setShapeAsDataSource(retrieveShapeSelection());
+    setShapeAsDataSource(getShape());
     updateCastDisplay();
 
 end
 
 function updateCastDisplay()
     self.cost.sourceUpdate();
+    updateCastActionList();
     --Debug.chat(getDatabaseNode().getChild("destruction_shapes").getChildren())
     --Debug.chat(DB.getPath(retrieveShapeSelection().getChild("cost"), "cast.cost"))
 
@@ -83,16 +84,32 @@ function updateCastDisplay()
 
 end
 
-function updateCost()
-    --local nCost = 0;
-    ----Debug.chat(DB.getPath(getDatabaseNode(), "cost").super.addSource)
-    --local nodeShape = retrieveShapeSelection();
-    --if nodeShape then
-    --    --nCost = nCost + DB.getValue(nodeShape, "cost", 0);
-    --end
-    --
-    --DB.setValue(getDatabaseNode(), "cast.cost", "number", nCost);
+function updateCastActionList()
+    local nodeSpell = getDatabaseNode();
+    local nodeActions = nodeSpell.createChild("castactions");
 
+    for _, action in pairs(nodeActions.getChildren()) do
+        action.delete();
+    end
+
+    local nodeShape = getShape();
+
+    addMainCastAction(nodeActions, nodeShape);
+
+    local nodeAction = nodeActions.createChild();
+    if not nodeAction then
+        return nil;
+    end
+
+    DB.setValue(nodeAction, "type", "string", "cast");
+end
+
+function addMainCastAction(nodeActions, nodeShape)
+    --Debug.chat(nodeShape)
+    --
+    --local foo = UtilityManager.copyDeep(nodeShape);
+    --
+    --Debug.chat(foo);
 end
 
 --function createAttack()
@@ -210,7 +227,7 @@ function usePower()
     if DB.getValue(nodeSpellClass, "castertype", "") == "points" then
         local nPP = DB.getValue(nodeSpell, ".points", 0);
         local nPPUsed = DB.getValue(nodeSpell, ".pointsused", 0);
-        local nCost = DB.getValue(nodeSpell, "cost", 0);
+        local nCost = DB.getValue(nodeSpell, "cast.cost", 0);
 
         sMessage = DB.getValue(nodeSpell, "name", "") .. " [" .. nCost .. " PP]";
         if (nPP - nPPUsed) < nCost then
