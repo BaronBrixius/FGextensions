@@ -53,30 +53,13 @@ end
 
 function createDisplay(sType)
     if sType == "cast" then
-        createControl("spell_action_castbutton", "castbutton");
-        createControl("spell_action_castlabel", "castlabel");
-        createControl("spell_action_attackbutton", "attackbutton");
-        createControl("spell_action_attackviewlabel", "attackviewlabel");
-        createControl("spell_action_attackview", "attackview");
-        createControl("spell_action_levelcheckbutton", "levelcheckbutton");
-        createControl("spell_action_levelcheckviewlabel", "levelcheckviewlabel");
-        createControl("spell_action_levelcheckview", "levelcheckview");
-        createControl("spell_action_savebutton", "savebutton");
-        createControl("spell_action_saveviewlabel", "saveviewlabel");
-        createControl("spell_action_saveview", "saveview");
-        createControl("spell_action_castdetailbutton", "castdetail");
+        createAttack();
+        createLevelCheck();
+        createSave();
     elseif sType == "damage" then
-        createControl("spell_action_damagebutton", "damagebutton");
-        createControl("spell_action_damagelabel", "damagelabel");
-        createControl("spell_action_damageview", "damageview");
-        createControl("spell_action_damagedetailbutton", "damagedetail");
+        createDamage();
     elseif sType == "heal" then
-        createControl("spell_action_healbutton", "healbutton");
-        createControl("spell_action_heallabel", "heallabel");
-        createControl("spell_action_healview", "healview");
-        createControl("spell_action_healtypelabel", "healtypelabel");
-        createControl("spell_action_healtype", "healtype");
-        createControl("spell_action_healdetailbutton", "healdetail");
+        createHeal();
     elseif sType == "effect" then
         createControl("spell_action_effectbutton", "effectbutton");
         createControl("spell_action_effecttargeting", "targeting");
@@ -85,6 +68,38 @@ function createDisplay(sType)
         createControl("spell_action_effectdurationview", "durationview");
         createControl("spell_action_effectdetailbutton", "effectdetail");
     end
+end
+
+function createAttack()
+    createControl("destruction_action_attackbutton", "attackbutton");
+    createControl("destruction_action_attackviewlabel", "attackviewlabel");
+    createControl("destruction_action_attackview", "attackview");
+end
+
+function createLevelCheck()
+    createControl("destruction_action_levelcheckbutton", "levelcheckbutton");
+    createControl("destruction_action_levelcheckviewlabel", "levelcheckviewlabel");
+    createControl("destruction_action_levelcheckview", "levelcheckview");
+end
+
+function createSave()
+    createControl("destruction_action_savebutton", "savebutton");
+    createControl("destruction_action_saveviewlabel", "saveviewlabel");
+    createControl("destruction_action_saveview", "saveview");
+end
+
+function createDamage()
+    createControl("destruction_action_damagebutton", "damagebutton");
+    createControl("destruction_action_damagelabel", "damagelabel");
+    createControl("destruction_action_damageview", "damageview");
+end
+
+function createHeal()
+    createControl("destruction_action_healbutton", "healbutton");
+    createControl("destruction_action_heallabel", "heallabel");
+    createControl("destruction_action_healview", "healview");
+    createControl("destruction_action_healtypelabel", "healtypelabel");
+    createControl("destruction_action_healtype", "healtype");
 end
 
 function updateViews()

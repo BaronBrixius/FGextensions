@@ -88,28 +88,24 @@ function updateCastActionList()
     local nodeSpell = getDatabaseNode();
     local nodeActions = nodeSpell.createChild("castactions");
 
-    for _, action in pairs(nodeActions.getChildren()) do
-        action.delete();
-    end
+    DB.deleteChildren(nodeActions)
 
     local nodeShape = getShape();
 
     addMainCastAction(nodeActions, nodeShape);
-
-    local nodeAction = nodeActions.createChild();
-    if not nodeAction then
-        return nil;
-    end
-
-    DB.setValue(nodeAction, "type", "string", "cast");
 end
 
 function addMainCastAction(nodeActions, nodeShape)
-    --Debug.chat(nodeShape)
-    --
-    --local foo = UtilityManager.copyDeep(nodeShape);
-    --
-    --Debug.chat(foo);
+    local nodeNewAction = nodeActions.createChild("main_cast");
+    if not nodeNewAction then
+        return nil;
+    end
+
+    local nodeShapeActions = nodeShape.getChild("actions");
+    for k,v in pairs(nodeShapeActions.getChildren()) do
+        DB.copyNode(v, nodeNewAction)
+    end
+
 end
 
 --function createAttack()
