@@ -1,6 +1,5 @@
 function onInit()
     doWithLock(updateDisplay)
-
     --getDatabaseNode().getChild("cost").addSource(rShape.cost)
 end
 
@@ -19,25 +18,25 @@ end
 
 function setShape(rNewShape)
     doWithLock(clearOtherShapeSelections, rNewShape)
-    --updateCost();
-
-    local sShapePath = DB.getPath(rNewShape.getDatabaseNode(), "cost");
-
-    --Debug.chat(string.match(sShapePath, "destruction.*"))
-    for k,v in pairs(self.cost.sources) do
-        if (string.match(k, "shapes", 1, 1)) then
-            --table.remov
-        end
-    end
-    self.cost.addSourceWithOp(string.match(sShapePath, "destruction.*"), "+")
+    setShapeAsDataSource(rNewShape.getDatabaseNode())
+    updateCastDisplay();
     --Debug.chat(DB.getValue(rNewShape.getDatabaseNode(), "cost", 0))
     --Debug.chat(self.cost.sources)
 
-    --Debug.chat(getDatabaseNode().getChildren())
+    --for k,v in pairs(self.cost.sources) do
+    --    Debug.chat(k,v)
+    --end
+end
 
+function setShapeAsDataSource(nodeShape)
     for k,v in pairs(self.cost.sources) do
-        Debug.chat(k,v)
+        if (string.match(k, "shapes", 1, 1)) then
+            v = nil;
+            self.cost.ops[k] = nil;
+        end
     end
+
+    self.cost.addSourceWithOp(string.match(DB.getPath(nodeShape, "cost"), "destruction.*"), "+");
 end
 
 function clearOtherShapeSelections(rSelectedShape)
@@ -59,17 +58,13 @@ function retrieveShapeSelection()
 end
 
 function updateDisplay()
-    updateCast();
+    setShapeAsDataSource(retrieveShapeSelection());
+    updateCastDisplay();
 
-    --createAttack()
-    --createDamage()
-    --createAttack()
-    --createSave()
-    --createLevelCheck()
 end
 
-function updateCast()
-    updateCost()
+function updateCastDisplay()
+    self.cost.sourceUpdate();
     --Debug.chat(getDatabaseNode().getChild("destruction_shapes").getChildren())
     --Debug.chat(DB.getPath(retrieveShapeSelection().getChild("cost"), "cast.cost"))
 

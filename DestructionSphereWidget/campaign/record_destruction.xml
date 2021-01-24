@@ -47,7 +47,7 @@
                     <left offset="10" />
                     <right offset="-10" />
                 </anchored>
-                <class>cast_header</class>
+                <class>cast_box</class>
                 <center />
                 <activate />
                 <fastinit />
@@ -70,7 +70,7 @@
         </sheetdata>
     </windowclass>
 
-    <windowclass name="cast_header">
+    <windowclass name="cast_box">
         <script file="campaign/scripts/destruction_cast.lua" />
         <frame>referenceblock-text3</frame>
         <margins control="20,20,20,20" />
@@ -88,7 +88,6 @@
             </icon_usepower>
 
             <number_chartotal name="cost" source="cast.cost">
-                <!--                number_linked.lua -->
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="5" />
@@ -126,7 +125,6 @@
                 </anchored>
                 <static textres="spell_label_cast" />
             </label>
-
 
             <genericcontrol name="castanchor">
                 <anchored>
@@ -205,7 +203,7 @@
         <sheetdata>
             <anchor_column name="hanchor" />
 
-            <buttonfield name="usespell" source=".selected">
+            <buttonfield name="selectspell" source=".selected">
                 <anchored width="12" height="12">
                     <top offset="7" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
@@ -224,23 +222,11 @@
                     end
                 </script>
             </buttonfield>
-            <basicnumber name="costfield" source="cost">
+            <basicnumber name="costdisplay" source="cost">
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
-<!--                <script>-->
-<!--                    function onInit()-->
-<!--                        DB.addHandler(DB.getPath(window.getDatabaseNode(), ".cost"), "onUpdate", onUpdate);-->
-<!--                    end-->
-
-<!--                    function onUpdate()-->
-<!--                        Debug.chat("here")-->
-<!--                        if DB.getValue(window.getDatabaseNode(), ".selected") then-->
-<!--                            window.parentcontrol.window.windowlist.window.cast_window.subwindow.updateCost();-->
-<!--                        end-->
-<!--                    end-->
-<!--                </script>-->
             </basicnumber>
             <counter_spell name="counter">
                 <anchored>
