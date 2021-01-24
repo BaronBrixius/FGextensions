@@ -29,7 +29,7 @@ function setShape(rNewShape)
 end
 
 function setShapeAsDataSource(nodeShape)
-    for k,v in pairs(self.cost.sources) do
+    for k, v in pairs(self.cost.sources) do
         if (string.match(k, "shapes", 1, 1)) then
             v = nil;
             self.cost.ops[k] = nil;
@@ -93,44 +93,38 @@ function updateCastActionList()
     local nodeShape = getShape();
 
     addMainCastAction(nodeActions, nodeShape);
+    addMainDamageAction(nodeActions, nodeShape);
 end
 
 function addMainCastAction(nodeActions, nodeShape)
-    local nodeNewAction = nodeActions.createChild("main_cast");
-    if not nodeNewAction then
+    local nodeNewMainCast = nodeActions.createChild("main_cast");
+    if not nodeNewMainCast then
         return nil;
     end
 
-    local nodeShapeActions = nodeShape.getChild("actions");
-    for k,v in pairs(nodeShapeActions.getChildren()) do
-        DB.copyNode(v, nodeNewAction)
+    local nodeShapeCast = { 9999 };
+
+    for _, v in pairs(nodeShape.getChild("actions").getChildren()) do
+        if DB.getValue(v, "type", "") == "cast" then
+            local nOrder = DB.getValue(v, "order", 0);
+            if nOrder < nodeShapeCast[1] then
+                nodeShapeCast[1] = nOrder;
+                nodeShapeCast[2] = v;
+            end
+        end
     end
 
+    if (nodeShapeCast[2]) then
+        DB.copyNode(nodeShapeCast[2], nodeNewMainCast)
+        DB.setValue(nodeNewMainCast, "order", "number", 1);
+    else
+        Debug.console("Error: No cast action in Shape.");
+    end
 end
 
---function createAttack()
---    createControl("destruction_action_attackbutton", "attackbutton");
---    createControl("destruction_action_attackviewlabel", "attackviewlabel");
---    createControl("destruction_action_attackview", "attackview");
---end
---
---function createLevelCheck()
---    createControl("destruction_action_levelcheckbutton", "levelcheckbutton");
---    createControl("destruction_action_levelcheckviewlabel", "levelcheckviewlabel");
---    createControl("destruction_action_levelcheckview", "levelcheckview");
---end
---
---function createSave()
---    createControl("destruction_action_savebutton", "savebutton");
---    createControl("destruction_action_saveviewlabel", "saveviewlabel");
---    createControl("destruction_action_saveview", "saveview");
---end
---
---function createDamage()
---    createControl("destruction_action_damagebutton", "damagebutton");
---    createControl("destruction_action_damagelabel", "damagelabel");
---    createControl("destruction_action_damageview", "damageview");
---end
+function addMainDamageAction(nodeActions, nodeShape)
+
+end
 
 function activatePower()
     local nodeSpell = getDatabaseNode();

@@ -61,12 +61,7 @@ function createDisplay(sType)
     elseif sType == "heal" then
         createHeal();
     elseif sType == "effect" then
-        createControl("spell_action_effectbutton", "effectbutton");
-        createControl("spell_action_effecttargeting", "targeting");
-        createControl("spell_action_effectapply", "apply");
-        createControl("spell_action_effectlabel", "label");
-        createControl("spell_action_effectdurationview", "durationview");
-        createControl("spell_action_effectdetailbutton", "effectdetail");
+        createEffect();
     end
 end
 
@@ -89,17 +84,25 @@ function createSave()
 end
 
 function createDamage()
-    createControl("destruction_action_damagebutton", "damagebutton");
-    createControl("destruction_action_damagelabel", "damagelabel");
-    createControl("destruction_action_damageview", "damageview");
+    createControl("spell_action_damagebutton", "damagebutton");
+    createControl("spell_action_damagelabel", "damagelabel");
+    createControl("spell_action_damageview", "damageview");
 end
 
 function createHeal()
-    createControl("destruction_action_healbutton", "healbutton");
-    createControl("destruction_action_heallabel", "heallabel");
-    createControl("destruction_action_healview", "healview");
-    createControl("destruction_action_healtypelabel", "healtypelabel");
-    createControl("destruction_action_healtype", "healtype");
+    createControl("spell_action_healbutton", "healbutton");
+    createControl("spell_action_heallabel", "heallabel");
+    createControl("spell_action_healview", "healview");
+    createControl("spell_action_healtypelabel", "healtypelabel");
+    createControl("spell_action_healtype", "healtype");
+end
+
+function createEffect()
+    createControl("spell_action_effectbutton", "effectbutton");
+    createControl("spell_action_effecttargeting", "targeting");
+    createControl("spell_action_effectapply", "apply");
+    createControl("spell_action_effectlabel", "label");
+    createControl("spell_action_effectdurationview", "durationview");
 end
 
 function updateViews()
