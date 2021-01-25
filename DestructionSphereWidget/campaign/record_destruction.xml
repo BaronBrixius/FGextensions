@@ -58,13 +58,28 @@
                 <center />
             </header_column>
             <list_charabilities name="shape_list">
-                <script file="campaign/scripts/spell_level2.lua" />
+<!--                <script file="campaign/scripts/spell_level2.lua" />-->
                 <anchored>
                     <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                     <left offset="0" />
                     <right offset="0" />
                 </anchored>
                 <datasource>.destruction_shapes</datasource>
+                <class>shape_spell</class>
+            </list_charabilities>
+
+            <header_column name="header_type">
+                <static textres="destruction_header_type" />
+                <center />
+            </header_column>
+            <list_charabilities name="type_list">
+<!--                <script file="campaign/scripts/spell_level2.lua" />-->
+                <anchored>
+                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
+                    <left offset="0" />
+                    <right offset="0" />
+                </anchored>
+                <datasource>.destruction_types</datasource>
                 <class>shape_spell</class>
             </list_charabilities>
         </sheetdata>
