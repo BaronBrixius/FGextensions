@@ -16,21 +16,20 @@ function doWithLock(fFunction, aArguments)
     return true;
 end
 
-function setShape(rNewShape)
-    doWithLock(clearOtherShapeSelections, rNewShape)
-    setShapeAsDataSource(rNewShape.getDatabaseNode())
-    updateCastDisplay();
-    --Debug.chat(DB.getValue(rNewShape.getDatabaseNode(), "cost", 0))
-    --Debug.chat(self.cost.sources)
+function selectTalent(rNewTalent, sCategory)
+    if sCategory == "shapes" then
+        doWithLock(clearOtherShapes, rNewTalent)
+    elseif sCategory == "types" then
+        doWithLock(clearOtherTypes, rNewTalent)
+    end
 
-    --for k,v in pairs(self.cost.sources) do
-    --    Debug.chat(k,v)
-    --end
+    setAsCostSource(rNewTalent.getDatabaseNode(), sCategory);
+    updateCastDisplay();
 end
 
-function setShapeAsDataSource(nodeShape)
+function setAsCostSource(nodeShape, sCategory)
     for k, v in pairs(self.cost.sources) do
-        if (string.match(k, "shapes", 1, 1)) then
+        if (string.match(k, sCategory, 1, 1)) then
             v = nil;
             self.cost.ops[k] = nil;
         end
@@ -39,7 +38,7 @@ function setShapeAsDataSource(nodeShape)
     self.cost.addSourceWithOp(string.match(DB.getPath(nodeShape, "cost"), "destruction.*"), "+");
 end
 
-function clearOtherShapeSelections(rSelectedShape)
+function clearOtherShapes(rSelectedShape)
     local rSelectedShapeNode = rSelectedShape.getDatabaseNode();
     for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
         if v ~= rSelectedShapeNode then
@@ -48,8 +47,17 @@ function clearOtherShapeSelections(rSelectedShape)
     end
 end
 
-function getShape()
-    for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
+function clearOtherTypes(rSelectedType)
+    local rSelectedTypeNode = rSelectedType.getDatabaseNode();
+    for _, v in pairs(getDatabaseNode().getChild("destruction_types").getChildren()) do
+        if v ~= rSelectedTypeNode then
+            DB.setValue(v, ".selected", "number", 0);
+        end
+    end
+end
+
+function getTalent(sCategory)
+    for _, v in pairs(getDatabaseNode().getChild("destruction_" .. sCategory).getChildren()) do
         if DB.getValue(v, ".selected", "number", 0) == 1 then
             return v;
         end
@@ -58,9 +66,9 @@ function getShape()
 end
 
 function updateDisplay()
-    setShapeAsDataSource(getShape());
+    setAsCostSource(getTalent("shapes"), "shapes");
+    setAsCostSource(getTalent("types"), "types");
     updateCastDisplay();
-
 end
 
 function updateCastDisplay()
@@ -90,10 +98,8 @@ function updateCastActionList()
 
     DB.deleteChildren(nodeActions)
 
-    local nodeShape = getShape();
-
-    addMainCastAction(nodeActions, nodeShape);
-    addMainDamageAction(nodeActions, nodeShape);
+    addMainCastAction(nodeActions, getTalent("shapes"));
+    addMainDamageAction(nodeActions, getTalent("types"));
 end
 
 function addMainCastAction(nodeActions, nodeShape)
@@ -122,8 +128,30 @@ function addMainCastAction(nodeActions, nodeShape)
     end
 end
 
-function addMainDamageAction(nodeActions, nodeShape)
+function addMainDamageAction(nodeActions, nodeType)
+    local nodeNewMainDamage = nodeActions.createChild("main_damage");
+    if not nodeNewMainDamage then
+        return nil;
+    end
 
+    local nodeTypeDamage = { 9999 };
+
+    for _, v in pairs(nodeType.getChild("actions").getChildren()) do
+        if DB.getValue(v, "type", "") == "damage" then
+            local nOrder = DB.getValue(v, "order", 0);
+            if nOrder < nodeTypeDamage[1] then
+                nodeTypeDamage[1] = nOrder;
+                nodeTypeDamage[2] = v;
+            end
+        end
+    end
+
+    if (nodeTypeDamage[2]) then
+        DB.copyNode(nodeTypeDamage[2], nodeNewMainDamage)
+        DB.setValue(nodeNewMainDamage, "order", "number", 2);
+    else
+        Debug.console("Error: No damage action in Type.");
+    end
 end
 
 function activatePower()
@@ -134,6 +162,8 @@ function activatePower()
 end
 
 function onSpellAction(draginfo, nodeAction, sSubRoll)
+    Debug.chat('cast button')
+
     --createDisplay();
 
 
@@ -165,7 +195,7 @@ function onSpellAction(draginfo, nodeAction, sSubRoll)
     --    if not rAction.subtype or rAction.subtype == "clc" then
     --        local rRoll = ActionSpell.getCLCRoll(rActor, rAction);
     --        if not rAction.subtype then
-    --            rRoll.sType = "castclc";
+    --            rRoll.sCategory = "castclc";
     --            rRoll.aDice = {};
     --        end
     --        table.insert(rRolls, rRoll);
@@ -175,7 +205,7 @@ function onSpellAction(draginfo, nodeAction, sSubRoll)
     --        if rAction.save and rAction.save ~= "" then
     --            local rRoll = ActionSpell.getSaveVsRoll(rActor, rAction);
     --            if not rAction.subtype then
-    --                rRoll.sType = "castsave";
+    --                rRoll.sCategory = "castsave";
     --            end
     --            table.insert(rRolls, rRoll);
     --        end
@@ -184,9 +214,9 @@ function onSpellAction(draginfo, nodeAction, sSubRoll)
     --elseif rAction.type == "damage" then
     --    local rRoll = ActionDamage.getRoll(rActor, rAction);
     --    if rAction.bSpellDamage then
-    --        rRoll.sType = "spdamage";
+    --        rRoll.sCategory = "spdamage";
     --    else
-    --        rRoll.sType = "damage";
+    --        rRoll.sCategory = "damage";
     --    end
     --
     --    table.insert(rRolls, rRoll);
@@ -203,7 +233,7 @@ function onSpellAction(draginfo, nodeAction, sSubRoll)
     --end
     --
     --if #rRolls > 0 then
-    --    ActionsManager.performMultiAction(draginfo, rActor, rRolls[1].sType, rRolls);
+    --    ActionsManager.performMultiAction(draginfo, rActor, rRolls[1].sCategory, rRolls);
     --end
 end
 
