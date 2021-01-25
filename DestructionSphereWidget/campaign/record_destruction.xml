@@ -124,7 +124,7 @@
         <margins control="0,0,0,20" />
         <sheetdata>
             <genericcontrol name="topanchor">
-                <anchored position="insidetopleft" offset="30,30" />
+                <anchored position="insidetopleft" offset="60,23" />
                 <disabled />
                 <invisible />
             </genericcontrol>
@@ -141,7 +141,6 @@
                     <left parent="topanchor" anchor="right" relation="relative" offset="7" />
                 </anchored>
             </number_chartotal>
-
             <button_roll name="castbutton">
                 <script>
                     function action(draginfo)
@@ -175,14 +174,102 @@
                 <static textres="spell_label_cast" />
             </label>
 
-            <windowlist name="castactions">
+            <genericcontrol name="hanchor">
+                <anchored width="0" height="0">
+                    <top parent="topanchor" anchor="top" offset="0" />
+                    <right offset="-55" />
+                </anchored>
+                <invisible />
+            </genericcontrol>
+            <basicnumber name="pointsused">
+                <anchored width="20" height="20">
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <min>0</min>
+                <tooltip textres="spell_tooltip_ppused" />
+                <tabtarget next="availablelevel0" prev="points" />
+                <script>
+                    function onValueChanged()
+                    window.onSpellCounterUpdate();
+                    end
+                </script>
+            </basicnumber>
+            <label name="label_pointsused">
                 <anchored>
-                    <top parent="topanchor" anchor="bottom" relation="relative" offset="15" />
-                    <left parent="topanchor" anchor="left" />
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <static>/</static>
+            </label>
+            <basicnumber name="points">
+                <anchored width="20" height="20">
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <min>0</min>
+                <tooltip textres="spell_tooltip_ppmax" />
+                <tabtarget next="pointsused" prev="cl" />
+                <script>
+                    function onValueChanged()
+                    window.onSpellCounterUpdate();
+                    end
+                </script>
+            </basicnumber>
+            <label name="label_points">
+                <anchored>
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <static textres="spell_label_pp" />
+            </label>
+            <button_cc name="button_cc">
+                <anchored width="20" height="20">
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <tooltip textres="spell_tooltip_cc" />
+            </button_cc>
+            <label name="label_cc">
+                <anchored>
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <static textres="spell_label_cc" />
+                <tooltip textres="spell_tooltip_cc" />
+            </label>
+            <basicnumber name="cl">
+                <anchored width="20" height="20">
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-10" />
+                </anchored>
+                <min>0</min>
+                <tooltip textres="casterlevel" />
+                <tabtarget next="points" />
+<!--                todo connect this to proper cast scaling -->
+<!--                <script>-->
+<!--                    function onValueChanged()-->
+<!--                    window.onStatUpdate();-->
+<!--                    end-->
+<!--                </script>-->
+            </basicnumber>
+            <label name="label_cl">
+                <anchored>
+                    <top parent="hanchor" anchor="bottom" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-10" />
+                </anchored>
+                <static textres="cl" />
+                <tooltip textres="casterlevel" />
+            </label>
+
+            <windowlist name="destruction_castactions">
+                <anchored>
+                    <top parent="topanchor" anchor="bottom" relation="relative" offset="10" />
+                    <left parent="topanchor" anchor="left" offset="-30" />
                     <right />
                 </anchored>
                 <noscroll />
-                <datasource>.castactions</datasource>
+                <datasource>.destruction_castactions</datasource>
                 <class>spell_action2</class>
             </windowlist>
         </sheetdata>

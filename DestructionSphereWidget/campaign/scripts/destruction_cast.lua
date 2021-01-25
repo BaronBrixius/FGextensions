@@ -94,7 +94,7 @@ end
 
 function updateCastActionList()
     local nodeSpell = getDatabaseNode();
-    local nodeActions = nodeSpell.createChild("castactions");
+    local nodeActions = nodeSpell.createChild("destruction_castactions");
 
     DB.deleteChildren(nodeActions)
 

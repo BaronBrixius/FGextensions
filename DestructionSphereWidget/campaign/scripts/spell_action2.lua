@@ -4,12 +4,130 @@
 --
 
 local m_sType = nil;
+local oldOnSpellAction;
 
 function onInit()
     local sNode = getDatabaseNode().getNodeName();
     DB.addHandler(sNode, "onChildAdded", onDataChanged);
     DB.addHandler(sNode, "onChildUpdate", onDataChanged);
     onDataChanged();
+
+    oldOnSpellAction = SpellManager.onSpellAction;
+    SpellManager.onSpellAction = onSpellAction;
+
+    SpellManager.getActionMod = getActionMod;
+end
+
+function test()
+    Debug.chat("here")
+end
+
+function onSpellAction(draginfo, nodeAction, sSubRoll)
+    --Debug.chat(nodeAction)
+
+    if string.find(nodeAction.getPath(), "destruction", 1, 1) and not string.find(nodeAction.getPath(), "One.Two.Three.Four", 1, 1) then
+        nodeAction = nodeAction.createChild("One")
+                .createChild("Two")
+                .createChild("Three")
+                .createChild("Four");
+    end
+
+    Debug.chat(ActorManager.getActor("", nodeAction.getChild(".........")))
+    oldOnSpellAction(draginfo, nodeAction, sSubRoll);
+
+
+    --if not nodeAction then
+    --    return;
+    --end
+    --
+    --Debug.chat(ActorManager.getActor("", nodeAction.getChild(".......")));
+    --local rActor = ActorManager.getActor("", nodeAction.getChild("........."));
+    --if not rActor then
+    --    return;
+    --end
+    --
+    --local rAction = SpellManager.getSpellAction(rActor, nodeAction, sSubRoll);
+    --
+    --local rRolls = {};
+    --local rCustom = nil;
+    --if rAction.type == "cast" then
+    --    if not rAction.subtype then
+    --        table.insert(rRolls, ActionSpell.getSpellCastRoll(rActor, rAction));
+    --    end
+    --
+    --    if not rAction.subtype or rAction.subtype == "atk" then
+    --        if rAction.range then
+    --            table.insert(rRolls, ActionAttack.getRoll(rActor, rAction));
+    --        end
+    --    end
+    --
+    --    if not rAction.subtype or rAction.subtype == "clc" then
+    --        local rRoll = ActionSpell.getCLCRoll(rActor, rAction);
+    --        if not rAction.subtype then
+    --            rRoll.sType = "castclc";
+    --            rRoll.aDice = {};
+    --        end
+    --        table.insert(rRolls, rRoll);
+    --    end
+    --
+    --    if not rAction.subtype or rAction.subtype == "save" then
+    --        if rAction.save and rAction.save ~= "" then
+    --            local rRoll = ActionSpell.getSaveVsRoll(rActor, rAction);
+    --            if not rAction.subtype then
+    --                rRoll.sType = "castsave";
+    --            end
+    --            table.insert(rRolls, rRoll);
+    --        end
+    --    end
+    --
+    --elseif rAction.type == "damage" then
+    --    local rRoll = ActionDamage.getRoll(rActor, rAction);
+    --    if rAction.bSpellDamage then
+    --        rRoll.sType = "spdamage";
+    --    else
+    --        rRoll.sType = "damage";
+    --    end
+    --
+    --    table.insert(rRolls, rRoll);
+    --
+    --elseif rAction.type == "heal" then
+    --    table.insert(rRolls, ActionHeal.getRoll(rActor, rAction));
+    --
+    --elseif rAction.type == "effect" then
+    --    local rRoll;
+    --    rRoll = ActionEffect.getRoll(draginfo, rActor, rAction);
+    --    if rRoll then
+    --        table.insert(rRolls, rRoll);
+    --    end
+    --end
+    --
+    --if #rRolls > 0 then
+    --    ActionsManager.performMultiAction(draginfo, rActor, rRolls[1].sType, rRolls);
+    --end
+end
+
+
+function getActionMod(rActor, nodeAction, sStat, nStatMax)
+    local nStat;
+
+    if sStat == "" then
+        nStat = 0;
+    elseif sStat == "cl" or sStat == "halfcl" or sStat == "oddcl" then
+        nStat = DB.getValue(nodeAction, ".......cl", 0);
+        if sStat == "halfcl" then
+            nStat = math.floor((nStat + 0.5) / 2);
+        elseif sStat == "oddcl" then
+            nStat = math.floor((nStat + 1.5) / 2);
+        end
+    else
+        nStat = ActorManager2.getAbilityBonus(rActor, sStat);
+    end
+
+    if nStat > 0 and nStatMax and nStatMax > 0 then
+        nStat = math.max(math.min(nStat, nStatMax), 0);
+    end
+
+    return nStat;
 end
 
 function onClose()
