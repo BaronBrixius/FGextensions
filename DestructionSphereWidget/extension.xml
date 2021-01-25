@@ -21,6 +21,7 @@
         <string name="power_header_destruction">Destruction Actions</string>
         <string name="destruction_header_shape">Shape</string>
         <string name="destruction_header_type">Type</string>
+        <string name="destruction_header_other">Other</string>
 
     </base>
 </root>

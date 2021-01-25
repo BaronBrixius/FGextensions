@@ -41,49 +41,88 @@
         <sheetdata>
             <anchor_column name="columnanchor" />
 
-            <subwindow name="cast_window">
-                <anchored>
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="10" />
-                    <right offset="-10" />
-                </anchored>
-                <class>cast_box</class>
-                <center />
-                <activate />
-                <fastinit />
-            </subwindow>
+            <!--            <subwindow name="cast_window">-->
+            <!--                <anchored>-->
+            <!--                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />-->
+            <!--                    <left offset="10" />-->
+            <!--                    <right offset="-10" />-->
+            <!--                </anchored>-->
+            <!--                <class>cast_box</class>-->
+            <!--                <center />-->
+            <!--                <activate />-->
+            <!--                <fastinit />-->
+            <!--            </subwindow>-->
 
             <header_column name="header_shape">
                 <static textres="destruction_header_shape" />
-                <center />
             </header_column>
-            <list_charabilities name="shape_list">
-<!--                <script file="campaign/scripts/spell_level2.lua" />-->
+
+            <list_text name="shape_list">
+                <!--                <script file="campaign/scripts/spell_level2.lua" />-->
                 <anchored>
                     <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="0" />
-                    <right offset="0" />
+                    <left offset="5" />
+                    <right offset="-5" />
                 </anchored>
+                <sortby control="name"/>
+                <newfocus>name</newfocus>
+                <script>
+                    function onDrop(x, y, draginfo)
+                    return window.handleDrop(draginfo, getDatabaseNode());
+                    end
+                </script>
                 <datasource>.destruction_shapes</datasource>
                 <class>shape_spell</class>
-            </list_charabilities>
+            </list_text>
 
             <header_column name="header_type">
                 <static textres="destruction_header_type" />
-                <center />
             </header_column>
             <list_charabilities name="type_list">
-<!--                <script file="campaign/scripts/spell_level2.lua" />-->
+                <!--                <script file="campaign/scripts/spell_level2.lua" />-->
                 <anchored>
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="0" />
-                    <right offset="0" />
+                    <top parent="header_type" anchor="bottom" relation="relative" offset="10" />
+                    <left offset="5" />
+                    <right offset="-5" />
                 </anchored>
                 <datasource>.destruction_types</datasource>
-                <class>shape_spell</class>
+                <class>type_spell</class>
             </list_charabilities>
+
+            <!--            <header_column name="header_other">-->
+            <!--                <static textres="destruction_header_other" />-->
+            <!--                <center />-->
+            <!--            </header_column>-->
+            <!--            <list_charabilities name="other_list">-->
+            <!--                &lt;!&ndash;                <script file="campaign/scripts/spell_level2.lua" />&ndash;&gt;-->
+            <!--                <anchored>-->
+            <!--                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />-->
+            <!--                    <left offset="0" />-->
+            <!--                    <right offset="0" />-->
+            <!--                </anchored>-->
+            <!--                <datasource>.destruction_other</datasource>-->
+            <!--                <class>other_spell</class>-->
+            <!--            </list_charabilities>-->
         </sheetdata>
     </windowclass>
+
+<!--    <template name="list_talents">-->
+<!--        <list_text>-->
+<!--            <anchored>-->
+<!--                <top parent="header_type" anchor="bottom" relation="relative" offset="10" />-->
+<!--                <left offset="5" />-->
+<!--                <right offset="-5" />-->
+<!--            </anchored>-->
+<!--            <sortby><control>name</control></sortby>-->
+<!--            <newfocus>name</newfocus>-->
+<!--            <script>-->
+<!--                function onDrop(x, y, draginfo)-->
+<!--                return window.handleDrop(draginfo, getDatabaseNode());-->
+<!--                end-->
+<!--            </script>-->
+<!--            <class>shape_spell</class>-->
+<!--        </list_text>-->
+<!--    </template>-->
 
     <windowclass name="cast_box">
         <script file="campaign/scripts/destruction_cast.lua" />
@@ -205,9 +244,154 @@
             </windowlist>
         </sheetdata>
     </windowclass>
-    <!--    -->
 
     <windowclass name="shape_header">
+        <margins control="0,0,0,2" />
+        <script>
+            function usePower()
+            parentcontrol.window.usePower();
+            end
+
+            function onSpellCounterUpdate()
+            parentcontrol.window.windowlist.window.onSpellCounterUpdate();
+            end
+        </script>
+        <sheetdata>
+            <anchor_column name="hanchor" />
+
+            <buttonfield name="selectspell" source=".selected">
+                <anchored width="12" height="12">
+                    <top offset="7" />
+                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
+                </anchored>
+                <state icon="button_checkoff" />
+                <state icon="button_checkon" />
+                <script>
+                    function onInit()
+                    onValueChanged();
+                    end
+
+                    function onValueChanged()
+                    if getValue() == 1 then
+                    window.parentcontrol.window.windowlist.window.cast_window.subwindow.setShape(window);
+                    end
+                    end
+                </script>
+            </buttonfield>
+            <basicnumber name="costdisplay" source="cost">
+                <anchored width="20" height="20">
+                    <top offset="2" />
+                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
+                </anchored>
+            </basicnumber>
+            <counter_spell name="counter">
+                <anchored>
+                    <top offset="2" />
+                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
+                </anchored>
+            </counter_spell>
+
+            <genericcontrol name="rightanchor">
+                <anchored position="insidetopright" width="0" height="0" />
+            </genericcontrol>
+            <string_spell name="shortdescription">
+                <anchored width="200" height="20">
+                    <top offset="2" />
+                    <right parent="rightanchor" anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <empty textres="spell_emptydesc" />
+            </string_spell>
+
+            <string_spell name="name">
+                <anchored>
+                    <top offset="2" />
+                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
+                    <right parent="rightanchor" anchor="left" relation="relative" offset="-10" />
+                </anchored>
+                <multilinespacing>20</multilinespacing>
+                <empty textres="library_recordtype_empty_spell" />
+                <script>
+                    function onDoubleClick(x, y)
+                    DB.setValue(window.getDatabaseNode(), ".selected", "number", 1);
+                    end
+
+                    function onDragStart(button, x, y, draginfo)
+                    local node = window.getDatabaseNode();
+                    if not node then
+                    return false;
+                    end
+
+                    local nLevel = 0;
+                    local nodeSpellLevel = node.getChild("...");
+                    if nodeSpellLevel then
+                    nLevel = tonumber(string.sub(nodeSpellLevel.getName(), 6)) or 0;
+                    end
+
+                    draginfo.setType("spellmove");
+                    draginfo.setStringData(getValue());
+                    draginfo.setNumberData(nLevel);
+                    draginfo.setDatabaseNode(node);
+
+                    return true;
+                    end
+                </script>
+            </string_spell>
+        </sheetdata>
+    </windowclass>
+
+    <windowclass name="type_spell">
+        <margins control="0,0,0,2" />
+        <!--        <script file="campaign/scripts/spell2.lua" />-->
+        <sheetdata>
+            <genericcontrol name="rightanchor">
+                <anchored width="0" height="0">
+                    <top offset="5" />
+                    <right />
+                </anchored>
+                <invisible />
+            </genericcontrol>
+            <linkcontrol name="shortcut">
+                <anchored to="rightanchor" width="20" height="20">
+                    <top />
+                    <right anchor="left" relation="relative" offset="-5" />
+                </anchored>
+                <class>spelldesc2</class>
+                <readonly />
+            </linkcontrol>
+            <button_toggledetail name="activatedetail">
+                <anchored to="rightanchor">
+                    <top />
+                    <right anchor="left" relation="relative" offset="-2" />
+                </anchored>
+            </button_toggledetail>
+
+            <subwindow name="header">
+                <anchored>
+                    <top />
+                    <left />
+                    <right parent="rightanchor" anchor="left" relation="relative" />
+                </anchored>
+                <class>type_header</class>
+                <activate />
+                <fastinit />
+            </subwindow>
+
+            <windowlist name="actions">
+                <anchored>
+                    <top parent="header" anchor="bottom" relation="relative" offset="5" />
+                    <left offset="10" />
+                    <right />
+                </anchored>
+                <noscroll />
+                <datasource>.actions</datasource>
+                <class>spell_action</class>
+                <invisible />
+            </windowlist>
+        </sheetdata>
+    </windowclass>
+    <!--    -->
+
+    <windowclass name="type_header">
         <margins control="0,0,0,2" />
         <script>
             function usePower()
