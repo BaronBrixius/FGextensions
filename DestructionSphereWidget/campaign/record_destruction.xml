@@ -262,14 +262,14 @@
                 <tooltip textres="casterlevel" />
             </label>
 
-            <windowlist name="destruction_castactions">
+            <windowlist name="destruction_actions">
                 <anchored>
                     <top parent="topanchor" anchor="bottom" relation="relative" offset="10" />
                     <left parent="topanchor" anchor="left" offset="-30" />
                     <right />
                 </anchored>
                 <noscroll />
-                <datasource>.destruction_castactions</datasource>
+                <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action2</class>
             </windowlist>
         </sheetdata>

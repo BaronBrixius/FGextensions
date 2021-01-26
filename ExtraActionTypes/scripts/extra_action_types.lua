@@ -4,7 +4,8 @@
 local oldOnSpellAction;
 local oldGetActionAttackText;
 local oldApplyDamage;
-local oldEndTurn;
+local oldOnEffectActorStartTurn;
+local oldOnEffectEndTurn;
 local oldCustomOnEffectAddIgnoreCheck;
 local oldApplyAttack;
 local oldClearCritState;
@@ -26,13 +27,9 @@ function onInit()
     oldGetActionAttackText = SpellManager.getActionAttackText;
     SpellManager.getActionAttackText = getActionDemoralizeText;
 
-    -- Temp HP Changes
-    oldApplyDamage = ActionDamage.applyDamage;
-    ActionDamage.applyDamage = newApplyDamage;
-
     -- Effect Expires At End Of Turn
-    oldEndTurn = EffectManager.fCustomOnEffectEndTurn
-    EffectManager.setCustomOnEffectEndTurn(newEndTurn)
+    oldOnEffectEndTurn = EffectManager.fCustomOnEffectEndTurn
+    EffectManager.setCustomOnEffectEndTurn(newOnEffectEndTurn)
 
     -- Use Target Initiative For Effect
     oldCustomOnEffectAddIgnoreCheck = EffectManager.fCustomOnEffectAddIgnoreCheck;
@@ -52,10 +49,17 @@ function onInit()
     ItemManager.addItemToList = newAddItemToList;
     OptionsManager.registerOption2("AUTOIDENTIFY", false, "option_header_game", "option_label_AUTOIDENTIFY", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
 
+    -- Temp HP Changes & Auto Concentration
+    oldApplyDamage = ActionDamage.applyDamage;
+    ActionDamage.applyDamage = newApplyDamage;
+
     -- Auto Concentration
     oldPerformAction = ActionsManager.performAction;
     ActionsManager.performAction = newPerformAction;
     ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
+
+    oldOnEffectActorStartTurn = EffectManager.fCustomOnEffectActorStartTurn;
+    EffectManager.setCustomOnEffectActorStartTurn(checkConcentrationEffectOnActorStartTurn);
 
     -- Combo Hotkeys
     OptionsManager.registerOption2("COMBOHOTKEYS", true, "option_header_client", "option_label_COMBOHOTKEYS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
@@ -73,9 +77,30 @@ function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
     return nodeNew;
 end
 
-function newEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
-    if oldEndTurn then
-        oldEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit);
+function checkConcentrationEffectOnActorStartTurn(nodeActor, nodeEffect)
+    if oldOnEffectActorStartTurn then
+        if oldOnEffectActorStartTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit) then
+            return true;
+        end
+    end
+
+    if not string.find(DB.getValue(nodeEffect, "label", ""):lower(), "concentration:", 1, true) then
+        return false;
+    end
+
+    for _, v in pairs(nodeActor.createChild("effects").getChildren()) do
+        local sLabel = DB.getValue(v, "label", "");
+        if string.find(sLabel, "Entangled") then
+            forceConcentrationCheck(nodeActor, nodeEffect, 5)
+        end
+    end
+end
+
+function newOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
+    if oldOnEffectEndTurn then
+        if oldOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit) then
+            return true;
+        end
     end
 
     --If an effect's duration is less than 1, expire it (e.g. set duration as 1.5 for it to last 1 round but expire at end of turn)
@@ -84,6 +109,8 @@ function newEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
         EffectManager.expireEffect(nodeActor, nodeEffect);
         return true;
     end
+
+    return false;
 end
 
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
@@ -93,9 +120,10 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nNewTotal);
 
     local nHealthLost = nHealthBeforeAttack - getTotalHP(rTarget);
-
     if nHealthLost > 0 then
-        if wasHitByAttackOrFailedSave(rTarget) then
+        if string.find(sDamage, "Ongoing", 1, true) then
+            nHealthLost = math.max(1, math.floor(nHealthLost / 2))
+        elseif wasHitByAttackOrFailedSave(rTarget) then
             setVitalityLossState(rTarget, false);
             removeVitalityEffects(rTarget);
         end
