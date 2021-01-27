@@ -1,6 +1,10 @@
 function onInit()
+    DB.addHandler(DB.getPath(getDatabaseNode().getChild("destruction_shapes")), 'onChildUpdate', updateCastActionList);
+    DB.addHandler(DB.getPath(getDatabaseNode().getChild("destruction_types")), 'onChildUpdate', updateCastActionList);
+    DB.addHandler(DB.getPath(getDatabaseNode().getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
+    DB.addHandler(DB.getPath(getDatabaseNode().getChild(".dc.total")), 'onUpdate', updateAllActionValues);
+
     doWithLock(updateDisplay)
-    --getDatabaseNode().getChild("cost").addSource(rShape.cost)
 end
 
 local bDataChangedLock = false;
@@ -110,7 +114,7 @@ function addMainCastAction(nodeActions, nodeShape)
 
     local nodeShapeCast = { 9999 };
 
-    for _, v in pairs(nodeShape.getChild("actions").getChildren()) do
+    for _, v in pairs(nodeShape.getChild("spells.spell0.actions").getChildren()) do
         if DB.getValue(v, "type", "") == "cast" then
             local nOrder = DB.getValue(v, "order", 0);
             if nOrder < nodeShapeCast[1] then
@@ -136,7 +140,7 @@ function addMainDamageAction(nodeActions, nodeType)
 
     local nodeTypeDamage = { 9999 };
 
-    for _, v in pairs(nodeType.getChild("actions").getChildren()) do
+    for _, v in pairs(nodeType.getChild("spells.spell0.actions").getChildren()) do
         if DB.getValue(v, "type", "") == "damage" then
             local nOrder = DB.getValue(v, "order", 0);
             if nOrder < nodeTypeDamage[1] then
@@ -267,3 +271,27 @@ function onSpellCounterUpdate()
     Debug.chat('spellcounterupdate')
 end
 
+function updateAllActionValues()
+    updateTalentActionValues();
+    updateCastActionValues();
+end
+
+function updateCastActionValues()
+    for _, w in pairs(destruction_actions.getWindows()) do
+        w.updateViews();
+    end
+end
+
+function updateTalentActionValues()
+    for _, wl in pairs(parentcontrol.window.shape_list.getWindows()) do
+        for _, w in pairs(wl.actions.getWindows()) do
+            w.updateViews();
+        end
+    end
+
+    for _, wl in pairs(parentcontrol.window.type_list.getWindows()) do
+        for _, w in pairs(wl.actions.getWindows()) do
+            w.updateViews();
+        end
+    end
+end

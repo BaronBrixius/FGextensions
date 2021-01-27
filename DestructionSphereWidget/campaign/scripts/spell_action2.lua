@@ -12,8 +12,8 @@ function onInit()
     DB.addHandler(sNode, "onChildUpdate", onDataChanged);
     onDataChanged();
 
-    oldOnSpellAction = SpellManager.onSpellAction;
-    SpellManager.onSpellAction = onSpellAction;
+    --oldOnSpellAction = SpellManager.onSpellAction;
+    --SpellManager.onSpellAction = onSpellAction;
 
     SpellManager.getActionMod = getActionMod;
 end
@@ -23,7 +23,7 @@ function test()
 end
 
 function onSpellAction(draginfo, nodeAction, sSubRoll)
-    Debug.chat(nodeAction)
+    --Debug.chat(nodeAction)
 
     --if not string.find(nodeAction.getPath(), "destruction", 1, 1) then
         oldOnSpellAction(draginfo, nodeAction, sSubRoll);

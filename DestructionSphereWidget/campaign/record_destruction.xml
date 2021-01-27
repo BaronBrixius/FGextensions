@@ -60,7 +60,7 @@
                 <datasource>.destruction_shapes</datasource>
                 <script>
                     function onDrop(x, y, draginfo)
-                    return window.handleDrop(draginfo, getDatabaseNode());
+                        return window.handleDrop(draginfo, getDatabaseNode());
                     end
 
                     function setSelection(shapeSelection)
@@ -77,6 +77,10 @@
                 <script>
                     function onDrop(x, y, draginfo)
                         return window.handleDrop(draginfo, getDatabaseNode());
+                    end
+
+                    function onUpdate()
+                    Debug.chat('here')
                     end
 
                     function setSelection(typeSelection)
@@ -210,11 +214,6 @@
                 <min>0</min>
                 <tooltip textres="spell_tooltip_ppmax" />
                 <tabtarget next="pointsused" prev="cl" />
-                <script>
-                    function onValueChanged()
-                    window.onSpellCounterUpdate();
-                    end
-                </script>
             </basicnumber>
             <label name="label_points">
                 <anchored>
@@ -246,12 +245,11 @@
                 <min>0</min>
                 <tooltip textres="casterlevel" />
                 <tabtarget next="points" />
-<!--                todo connect this to proper cast scaling -->
-<!--                <script>-->
-<!--                    function onValueChanged()-->
-<!--                    window.onStatUpdate();-->
-<!--                    end-->
-<!--                </script>-->
+                <script>
+                    function onValueChanged()
+                        window.updateAllActionValues();
+                    end
+                </script>
             </basicnumber>
             <label name="label_cl">
                 <anchored>
@@ -269,6 +267,7 @@
                     <right />
                 </anchored>
                 <noscroll />
+                <!-- dummy nodes to fix relative references -->
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action2</class>
             </windowlist>
@@ -278,6 +277,7 @@
     <windowclass name="shape_spell">
         <margins control="0,0,0,2" />
         <script file="campaign/scripts/spell2.lua" />
+<!--        <minisheet />-->
         <sheetdata>
             <genericcontrol name="rightanchor">
                 <anchored width="0" height="0">
@@ -319,7 +319,7 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <datasource>.actions</datasource>
+                <datasource>.spells.spell0.actions</datasource>
                 <class>spell_action</class>
                 <invisible />
             </windowlist>
@@ -330,11 +330,11 @@
         <margins control="0,0,0,2" />
         <script>
             function usePower()
-            parentcontrol.window.usePower();
+                parentcontrol.window.usePower();
             end
 
             function onSpellCounterUpdate()
-            parentcontrol.window.windowlist.window.onSpellCounterUpdate();
+                parentcontrol.window.windowlist.window.onSpellCounterUpdate();
             end
         </script>
         <sheetdata>

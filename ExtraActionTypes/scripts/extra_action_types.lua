@@ -121,7 +121,7 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
 
     local nHealthLost = nHealthBeforeAttack - getTotalHP(rTarget);
     if nHealthLost > 0 then
-        if string.find(sDamage, "Ongoing", 1, true) then
+        if string.find(sDamage, "Ongoing", 1, true) then  --todo this isn't supposed to roll if effect just expired
             nHealthLost = math.max(1, math.floor(nHealthLost / 2))
         elseif wasHitByAttackOrFailedSave(rTarget) then
             setVitalityLossState(rTarget, false);

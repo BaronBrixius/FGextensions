@@ -44,7 +44,7 @@ end
 function createAction(sType)
 	local nodeSpell = getDatabaseNode();
 	if nodeSpell then
-		local nodeActions = nodeSpell.createChild("actions");
+		local nodeActions = nodeSpell.createChild("spells.spell0.actions");
 		if nodeActions then
 			local nodeAction = nodeActions.createChild();
 			if nodeAction then
@@ -97,7 +97,7 @@ end
 
 function activatePower()
 	local nodeSpell = getDatabaseNode();
-	Debug.chat(nodeSpell)
+	--Debug.chat(nodeSpell)
 	if nodeSpell then
 		ChatManager.Message(getDescription(), true, ActorManager.getActor("", nodeSpell.getChild(".....")));
 	end
