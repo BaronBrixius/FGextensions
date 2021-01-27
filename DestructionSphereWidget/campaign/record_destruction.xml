@@ -5,10 +5,10 @@
         <!--        <script file="scripts/destruction_widget.lua" />-->
         <frame>recordsheet</frame>
         <placement>
-            <size width="600" height="600" />
+            <size width="575" height="400" />
         </placement>
         <sizelimits>
-            <minimum width="525" height="400" />
+            <minimum width="575" height="140" />
             <dynamic />
         </sizelimits>
         <nodelete />
@@ -58,6 +58,7 @@
             </header_column>
             <list_talents name="shape_list">
                 <datasource>.destruction_shapes</datasource>
+<!--                todo find why these throw exceptions for calling the subwindow when it works? -->
                 <script>
                     function onDrop(x, y, draginfo)
                         return window.handleDrop(draginfo, getDatabaseNode());
@@ -89,7 +90,7 @@
                 </script>
             </list_talents>
 
-
+<!-- todo implement Other category (and also 1PP for full Caster Level to damage dice ability) -->
             <!--            <header_column name="header_other">-->
             <!--                <static textres="destruction_header_other" />-->
             <!--                <center />-->
@@ -128,23 +129,11 @@
         <margins control="0,0,0,20" />
         <sheetdata>
             <genericcontrol name="topanchor">
-                <anchored position="insidetopleft" offset="60,23" />
+                <anchored position="insidetopleft" offset="30,23" />
                 <disabled />
                 <invisible />
             </genericcontrol>
 
-            <icon_usepower name="usepower">
-                <anchored width="18" height="18">
-                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
-                    <top parent="topanchor" anchor="bottom" relation="relative" offset="2" />
-                </anchored>
-            </icon_usepower>
-            <number_chartotal name="cost" source="cast.cost">
-                <anchored width="20" height="20">
-                    <top parent="topanchor" anchor="bottom" />
-                    <left parent="topanchor" anchor="right" relation="relative" offset="7" />
-                </anchored>
-            </number_chartotal>
             <button_roll name="castbutton">
                 <script>
                     function action(draginfo)
@@ -166,7 +155,7 @@
                     end
                 </script>
                 <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="23"/>
                     <top parent="topanchor" anchor="bottom" />
                 </anchored>
             </button_roll>
@@ -177,6 +166,18 @@
                 </anchored>
                 <static textres="spell_label_cast" />
             </label>
+            <icon_usepower name="usepower">
+                <anchored width="17" height="17">
+                    <left parent="topanchor" anchor="right" relation="relative" offset="20" />
+                    <top parent="topanchor" anchor="bottom" relation="relative" offset="2" />
+                </anchored>
+            </icon_usepower>
+            <number_chartotal name="cost" source="cast.cost">
+                <anchored width="20" height="20">
+                    <top parent="topanchor" anchor="bottom" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="7" />
+                </anchored>
+            </number_chartotal>
 
             <genericcontrol name="hanchor">
                 <anchored width="0" height="0">
@@ -263,13 +264,13 @@
             <windowlist name="destruction_actions">
                 <anchored>
                     <top parent="topanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left parent="topanchor" anchor="left" offset="-30" />
+                    <left parent="topanchor" anchor="left" />
                     <right />
                 </anchored>
                 <noscroll />
                 <!-- dummy nodes to fix relative references -->
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
-                <class>spell_action2</class>
+                <class>spell_action</class>
             </windowlist>
         </sheetdata>
     </windowclass>
@@ -419,104 +420,6 @@
             </string_spell>
         </sheetdata>
     </windowclass>
-
-    <windowclass name="spell_action2">
-        <script file="campaign/scripts/spell_action2.lua" />
-        <sheetdata>
-            <genericcontrol name="castanchor">
-                <anchored position="insidetopleft" height="0" />
-                <disabled />
-                <invisible />
-            </genericcontrol>
-        </sheetdata>
-    </windowclass>
-
-    <template name="destruction_action_attackbutton">
-        <button_spellaction name="attackbutton">
-            <anchored>
-                <left parent="castanchor" anchor="right" relation="relative" offset="2" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <icon normal="button_action_attack" pressed="button_action_attack_down" />
-            <subroll>atk</subroll>
-        </button_spellaction>
-    </template>
-    <template name="destruction_action_attackviewlabel">
-        <label name="attackviewlabel">
-            <anchored>
-                <left parent="castanchor" anchor="right" relation="relative" offset="3" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <static textres="spell_label_atk" />
-        </label>
-    </template>
-    <template name="destruction_action_attackview">
-        <string_spellactionview name="attackview">
-            <anchored width="80">
-                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <subroll>atk</subroll>
-        </string_spellactionview>
-    </template>
-
-    <template name="destruction_action_levelcheckbutton">
-        <button_spellaction name="levelcheckbutton">
-            <anchored>
-                <left parent="castanchor" anchor="right" relation="relative" offset="2" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <subroll>clc</subroll>
-        </button_spellaction>
-    </template>
-    <template name="destruction_action_levelcheckviewlabel">
-        <label name="levelcheckviewlabel">
-            <anchored>
-                <left parent="castanchor" anchor="right" relation="relative" offset="3" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <static textres="clc" />
-            <tooltip textres="casterlevelcheck" />
-        </label>
-    </template>
-    <template name="destruction_action_levelcheckview">
-        <string_spellactionview name="levelcheckview">
-            <anchored width="25">
-                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <subroll>clc</subroll>
-        </string_spellactionview>
-    </template>
-
-    <template name="destruction_action_savebutton">
-        <button_spellaction name="savebutton">
-            <anchored>
-                <left parent="castanchor" anchor="right" relation="relative" offset="2" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <subroll>save</subroll>
-        </button_spellaction>
-    </template>
-    <template name="destruction_action_saveviewlabel">
-        <label name="saveviewlabel">
-            <anchored>
-                <left parent="castanchor" anchor="right" relation="relative" offset="3" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <static textres="save" />
-        </label>
-    </template>
-    <template name="destruction_action_saveview">
-        <string_spellactionview name="saveview">
-            <anchored width="60">
-                <left parent="castanchor" anchor="right" relation="relative" offset="7" />
-                <top parent="castanchor" relation="relative" offset="2"/>
-            </anchored>
-            <subroll>save</subroll>
-        </string_spellactionview>
-    </template>
-
 
     <windowclass name="spell_class">
         <margins control="0,0,0,5" />

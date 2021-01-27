@@ -1,10 +1,19 @@
 function onInit()
-    DB.addHandler(DB.getPath(getDatabaseNode().getChild("destruction_shapes")), 'onChildUpdate', updateCastActionList);
-    DB.addHandler(DB.getPath(getDatabaseNode().getChild("destruction_types")), 'onChildUpdate', updateCastActionList);
-    DB.addHandler(DB.getPath(getDatabaseNode().getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
-    DB.addHandler(DB.getPath(getDatabaseNode().getChild(".dc.total")), 'onUpdate', updateAllActionValues);
+    local nodeCast = getDatabaseNode();
+    DB.addHandler(DB.getPath(nodeCast.getChild("destruction_shapes")), 'onChildUpdate', updateCastActionList);
+    DB.addHandler(DB.getPath(nodeCast.getChild("destruction_types")), 'onChildUpdate', updateCastActionList);
+    DB.addHandler(DB.getPath(nodeCast.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
+    DB.addHandler(DB.getPath(nodeCast.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 
     doWithLock(updateDisplay)
+end
+
+function onClose()
+    local nodeCast = getDatabaseNode();
+    DB.removeHandler(DB.getPath(nodeCast.getChild("destruction_shapes")), 'onChildUpdate', updateCastActionList);
+    DB.removeHandler(DB.getPath(nodeCast.getChild("destruction_types")), 'onChildUpdate', updateCastActionList);
+    DB.removeHandler(DB.getPath(nodeCast.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
+    DB.removeHandler(DB.getPath(nodeCast.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 end
 
 local bDataChangedLock = false;
@@ -21,6 +30,7 @@ function doWithLock(fFunction, aArguments)
 end
 
 function selectTalent(rNewTalent, sCategory)
+    Debug.chat('bub')
     if sCategory == "shapes" then
         doWithLock(clearOtherShapes, rNewTalent)
     elseif sCategory == "types" then
@@ -31,7 +41,7 @@ function selectTalent(rNewTalent, sCategory)
     updateCastDisplay();
 end
 
-function setAsCostSource(nodeShape, sCategory)
+function setAsCostSource(nodeShape, sCategory)      --todo probably don't need official 'sources' since the update is called so often
     for k, v in pairs(self.cost.sources) do
         if (string.match(k, sCategory, 1, 1)) then
             v = nil;
@@ -42,7 +52,10 @@ function setAsCostSource(nodeShape, sCategory)
     self.cost.addSourceWithOp(string.match(DB.getPath(nodeShape, "cost"), "destruction.*"), "+");
 end
 
-function clearOtherShapes(rSelectedShape)
+function clearOtherShapes(rSelectedShape)       --todo make this method not copypasted
+    --if sType ~= "shapes" and sType ~="types" then
+    --    return;
+    --end
     local rSelectedShapeNode = rSelectedShape.getDatabaseNode();
     for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
         if v ~= rSelectedShapeNode then
@@ -102,11 +115,16 @@ function updateCastActionList()
 
     DB.deleteChildren(nodeActionsList)
 
-    copyActionsToCast(nodeActionsList, getTalent("shapes").getChild("spells.spell0.actions").getChildren());
-    copyActionsToCast(nodeActionsList, getTalent("types").getChild("spells.spell0.actions").getChildren());
+    copyActionsToCast(nodeActionsList, getTalent("shapes"));
+    copyActionsToCast(nodeActionsList, getTalent("types"));
 end
 
-function copyActionsToCast(aCastActions, aTalentActions)
+function copyActionsToCast(aCastActions, nodeTalent)    --todo remove detailbutton from action when copied over
+    if not nodeTalent then
+        return;
+    end
+    local aTalentActions = nodeTalent.getChild("spells.spell0.actions").getChildren();
+
     local aKeys = { };
 
     for k in pairs(aTalentActions) do
@@ -132,7 +150,7 @@ function activatePower()
     end
 end
 
-function onSpellAction(draginfo, nodeAction, sSubRoll)
+function onSpellAction(draginfo, nodeAction, sSubRoll) --todo cast should use PP and cast all actions until failure
     Debug.chat('cast button')
 
     --createDisplay();

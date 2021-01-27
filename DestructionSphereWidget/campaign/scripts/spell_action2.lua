@@ -303,9 +303,8 @@ end
 
 function createDisplay(sType)
     if sType == "cast" then
-        createAttack();
-        createLevelCheck();
-        createSave();
+        createCast();
+
     elseif sType == "damage" then
         createDamage();
     elseif sType == "heal" then
@@ -315,22 +314,16 @@ function createDisplay(sType)
     end
 end
 
-function createAttack()
-    createControl("destruction_action_attackbutton", "attackbutton");
-    createControl("destruction_action_attackviewlabel", "attackviewlabel");
-    createControl("destruction_action_attackview", "attackview");
-end
-
-function createLevelCheck()
-    createControl("destruction_action_levelcheckbutton", "levelcheckbutton");
-    createControl("destruction_action_levelcheckviewlabel", "levelcheckviewlabel");
-    createControl("destruction_action_levelcheckview", "levelcheckview");
-end
-
-function createSave()
-    createControl("destruction_action_savebutton", "savebutton");
-    createControl("destruction_action_saveviewlabel", "saveviewlabel");
-    createControl("destruction_action_saveview", "saveview");
+function createCast()
+    createControl("spell_action_attackbutton", "attackbutton");
+    createControl("spell_action_attackviewlabel", "attackviewlabel");
+    createControl("spell_action_attackview", "attackview");
+    createControl("spell_action_levelcheckbutton", "levelcheckbutton");
+    createControl("spell_action_levelcheckviewlabel", "levelcheckviewlabel");
+    createControl("spell_action_levelcheckview", "levelcheckview");
+    createControl("spell_action_savebutton", "savebutton");
+    createControl("spell_action_saveviewlabel", "saveviewlabel");
+    createControl("spell_action_saveview", "saveview");
 end
 
 function createDamage()
