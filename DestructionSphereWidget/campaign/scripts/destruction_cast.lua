@@ -98,64 +98,31 @@ end
 
 function updateCastActionList()
     local nodeSpell = getDatabaseNode();
-    local nodeActions = nodeSpell.createChild("level.level0.spell.spell0.destruction_actions");
+    local nodeActionsList = nodeSpell.createChild("level.level0.spell.spell0.destruction_actions");
 
-    DB.deleteChildren(nodeActions)
+    DB.deleteChildren(nodeActionsList)
 
-    addMainCastAction(nodeActions, getTalent("shapes"));
-    addMainDamageAction(nodeActions, getTalent("types"));
+    copyActionsToCast(nodeActionsList, getTalent("shapes").getChild("spells.spell0.actions").getChildren());
+    copyActionsToCast(nodeActionsList, getTalent("types").getChild("spells.spell0.actions").getChildren());
 end
 
-function addMainCastAction(nodeActions, nodeShape)
-    local nodeNewMainCast = nodeActions.createChild("main_cast");
-    if not nodeNewMainCast then
-        return nil;
+function copyActionsToCast(aCastActions, aTalentActions)
+    local aKeys = { };
+
+    for k in pairs(aTalentActions) do
+        table.insert(aKeys, k);
     end
 
-    local nodeShapeCast = { 9999 };
+    table.sort(aKeys);
 
-    for _, v in pairs(nodeShape.getChild("spells.spell0.actions").getChildren()) do
-        if DB.getValue(v, "type", "") == "cast" then
-            local nOrder = DB.getValue(v, "order", 0);
-            if nOrder < nodeShapeCast[1] then
-                nodeShapeCast[1] = nOrder;
-                nodeShapeCast[2] = v;
-            end
-        end
-    end
-
-    if (nodeShapeCast[2]) then
-        DB.copyNode(nodeShapeCast[2], nodeNewMainCast)
-        DB.setValue(nodeNewMainCast, "order", "number", 1);
-    else
-        Debug.console("Error: No cast action in Shape.");
+    for _,k in ipairs(aKeys) do
+        addAction(aCastActions, aTalentActions[k]);
     end
 end
 
-function addMainDamageAction(nodeActions, nodeType)
-    local nodeNewMainDamage = nodeActions.createChild("main_damage");
-    if not nodeNewMainDamage then
-        return nil;
-    end
-
-    local nodeTypeDamage = { 9999 };
-
-    for _, v in pairs(nodeType.getChild("spells.spell0.actions").getChildren()) do
-        if DB.getValue(v, "type", "") == "damage" then
-            local nOrder = DB.getValue(v, "order", 0);
-            if nOrder < nodeTypeDamage[1] then
-                nodeTypeDamage[1] = nOrder;
-                nodeTypeDamage[2] = v;
-            end
-        end
-    end
-
-    if (nodeTypeDamage[2]) then
-        DB.copyNode(nodeTypeDamage[2], nodeNewMainDamage)
-        DB.setValue(nodeNewMainDamage, "order", "number", 2);
-    else
-        Debug.console("Error: No damage action in Type.");
-    end
+function addAction(nodeActionsList, nodeAction)
+    local nodeNewAction = nodeActionsList.createChild();
+    DB.copyNode(nodeAction, nodeNewAction)
 end
 
 function activatePower()
