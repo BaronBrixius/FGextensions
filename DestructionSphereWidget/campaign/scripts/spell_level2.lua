@@ -46,11 +46,11 @@ function onValueChanged()
 end
 
 function onClickRelease(button, x, y)
-	--if DB.getChildCount(spells.getDatabaseNode(), "") == 0 then
-	--	spells.addEntry(true);
-	--	return true;
-	--end
-	--
-	--spells.setVisible(not spells.isVisible());
+	if DB.getChildCount(spells.getDatabaseNode(), "") == 0 then
+		spells.addEntry(true);
+		return true;
+	end
+
+	spells.setVisible(not spells.isVisible());
 	return true;
 end

@@ -23,5 +23,6 @@
         <string name="destruction_header_type">Type</string>
         <string name="destruction_header_other">Other</string>
 
+        <string name="cast_label_fullpower">Full Power</string>
     </base>
 </root>

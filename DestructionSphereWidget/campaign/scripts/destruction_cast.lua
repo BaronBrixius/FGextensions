@@ -109,6 +109,10 @@ function updateCastDisplay()
 
 end
 
+function updateCost()
+    Debug.chat('cost brrr')
+end
+
 function updateCastActionList()
     local nodeSpell = getDatabaseNode();
     local nodeActionsList = nodeSpell.createChild("level.level0.spell.spell0.destruction_actions");
@@ -126,11 +130,9 @@ function copyActionsToCast(aCastActions, nodeTalent)    --todo remove detailbutt
     local aTalentActions = nodeTalent.getChild("spells.spell0.actions").getChildren();
 
     local aKeys = { };
-
     for k in pairs(aTalentActions) do
         table.insert(aKeys, k);
     end
-
     table.sort(aKeys);
 
     for _,k in ipairs(aKeys) do

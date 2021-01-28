@@ -53,58 +53,112 @@
                 <fastinit />
             </subwindow>
 
+            <!--            <subwindow name="cast_window">-->
+            <!--                <anchored>-->
+            <!--                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />-->
+            <!--                    <left offset="10" />-->
+            <!--                    <right offset="-10" />-->
+            <!--                </anchored>-->
+            <!--                <class>cast_box</class>-->
+            <!--                <center />-->
+            <!--                <activate />-->
+            <!--                <fastinit />-->
+            <!--            </subwindow>-->
+
             <header_column name="header_shape">
                 <static textres="destruction_header_shape" />
+                <script>
+                    function onClickDown(button, x, y)
+                    return true;
+                    end
+
+                    function onClickRelease(button, x, y)
+                    if DB.getChildCount(window.shape_list.getDatabaseNode(), "") == 0 then
+                    window.shape_list.createWindow();
+                    return true;
+                    end
+
+                    window.shape_list.setVisible(not window.shape_list.isVisible());
+                    return true;
+                    end
+                </script>
             </header_column>
             <list_talents name="shape_list">
                 <datasource>.destruction_shapes</datasource>
-<!--                todo find why these throw exceptions for calling the subwindow when it works? -->
+                <!--                todo why does this get called before the subwindow exists? -->
                 <script>
                     function onDrop(x, y, draginfo)
-                        return window.handleDrop(draginfo, getDatabaseNode());
+                    return window.handleDrop(draginfo, getDatabaseNode());
                     end
 
                     function setSelection(shapeSelection)
-                        window.cast_window.subwindow.selectTalent(shapeSelection, "shapes")
+                    window.cast_window.subwindow.selectTalent(shapeSelection, "shapes")
                     end
                 </script>
             </list_talents>
 
             <header_column name="header_type">
                 <static textres="destruction_header_type" />
+                <script>
+                    function onClickDown(button, x, y)
+                    return true;
+                    end
+
+                    function onClickRelease(button, x, y)
+                    if DB.getChildCount(window.type_list.getDatabaseNode(), "") == 0 then
+                    window.type_list.createWindow();
+                    return true;
+                    end
+
+                    window.type_list.setVisible(not window.type_list.isVisible());
+                    return true;
+                    end
+                </script>
             </header_column>
             <list_talents name="type_list">
                 <datasource>.destruction_types</datasource>
                 <script>
                     function onDrop(x, y, draginfo)
-                        return window.handleDrop(draginfo, getDatabaseNode());
-                    end
-
-                    function onUpdate()
-                    Debug.chat('here')
+                    return window.handleDrop(draginfo, getDatabaseNode());
                     end
 
                     function setSelection(typeSelection)
-                        window.cast_window.subwindow.selectTalent(typeSelection, "types")
+                    window.cast_window.subwindow.selectTalent(typeSelection, "types")
                     end
                 </script>
             </list_talents>
 
-<!-- todo implement Other category (and also 1PP for full Caster Level to damage dice ability) -->
-            <!--            <header_column name="header_other">-->
-            <!--                <static textres="destruction_header_other" />-->
-            <!--                <center />-->
-            <!--            </header_column>-->
-            <!--            <list_charabilities name="other_list">-->
-            <!--                &lt;!&ndash;                <script file="campaign/scripts/spell_level2.lua" />&ndash;&gt;-->
-            <!--                <anchored>-->
-            <!--                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />-->
-            <!--                    <left offset="0" />-->
-            <!--                    <right offset="0" />-->
-            <!--                </anchored>-->
-            <!--                <datasource>.destruction_other</datasource>-->
-            <!--                <class>other_spell</class>-->
-            <!--            </list_charabilities>-->
+            <!-- todo implement Other category (and also 1PP for full Caster Level to damage dice ability) -->
+            <header_column name="header_other">
+                <script>
+                    function onClickDown(button, x, y)
+                    return true;
+                    end
+
+                    function onClickRelease(button, x, y)
+                    if DB.getChildCount(window.other_list.getDatabaseNode(), "") == 0 then
+                    window.other_list.createWindow();
+                    return true;
+                    end
+
+                    window.other_list.setVisible(not window.other_list.isVisible());
+                    return true;
+                    end
+                </script>
+                <static textres="destruction_header_other" />
+            </header_column>
+            <list_talents name="other_list">
+                <datasource>.destruction_other</datasource>
+                <script>
+                    function onDrop(x, y, draginfo)
+                    return window.handleDrop(draginfo, getDatabaseNode());
+                    end
+
+                    function setSelection(typeSelection)
+                    window.cast_window.subwindow.selectTalent(typeSelection, "other")
+                    end
+                </script>
+            </list_talents>
         </sheetdata>
     </windowclass>
 
@@ -119,7 +173,7 @@
                 <control>name</control>
             </sortby>
             <newfocus>name</newfocus>
-            <class>shape_spell</class>
+            <class>destruction_spell</class>
         </list_text>
     </template>
 
@@ -134,38 +188,38 @@
                 <invisible />
             </genericcontrol>
 
-            <button_roll name="castbutton">
-                <script>
-                    function action(draginfo)
-                    local sSubRoll = nil;
-                    if subroll then
-                    sSubRoll = subroll[1];
-                    end
+            <!--            <button_roll name="castbutton">-->
+            <!--                <script>-->
+            <!--                    function action(draginfo)-->
+            <!--                    local sSubRoll = nil;-->
+            <!--                    if subroll then-->
+            <!--                    sSubRoll = subroll[1];-->
+            <!--                    end-->
 
-                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);
-                    end
+            <!--                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
+            <!--                    end-->
 
-                    function onButtonPress()
-                    action();
-                    end
+            <!--                    function onButtonPress()-->
+            <!--                    action();-->
+            <!--                    end-->
 
-                    function onDragStart(button, x, y, draginfo)
-                    action(draginfo);
-                    return true;
-                    end
-                </script>
-                <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="23"/>
-                    <top parent="topanchor" anchor="bottom" />
-                </anchored>
-            </button_roll>
-            <label name="castlabel">
-                <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
-                    <top parent="topanchor" anchor="bottom" />
-                </anchored>
-                <static textres="spell_label_cast" />
-            </label>
+            <!--                    function onDragStart(button, x, y, draginfo)-->
+            <!--                    action(draginfo);-->
+            <!--                    return true;-->
+            <!--                    end-->
+            <!--                </script>-->
+            <!--                <anchored>-->
+            <!--                    <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
+            <!--                    <top parent="topanchor" anchor="bottom" />-->
+            <!--                </anchored>-->
+            <!--            </button_roll>-->
+            <!--            <label name="castlabel">-->
+            <!--                <anchored>-->
+            <!--                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
+            <!--                    <top parent="topanchor" anchor="bottom" />-->
+            <!--                </anchored>-->
+            <!--                <static textres="spell_label_cast" />-->
+            <!--            </label>-->
             <icon_usepower name="usepower">
                 <anchored width="17" height="17">
                     <left parent="topanchor" anchor="right" relation="relative" offset="20" />
@@ -178,6 +232,30 @@
                     <left parent="topanchor" anchor="right" relation="relative" offset="7" />
                 </anchored>
             </number_chartotal>
+            <buttonfield name="selectspell" source=".selected">
+                <anchored width="12" height="12">
+                    <top parent="topanchor" anchor="bottom" offset="3" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                </anchored>
+                <state icon="button_checkoff" />
+                <state icon="button_checkon" />
+                <script>
+                    function onInit()
+                    onValueChanged();
+                    end
+
+                    function onValueChanged()
+                    window.updateCost();
+                    end
+                </script>
+            </buttonfield>
+            <label name="fullpowerlabel">
+                <anchored>
+                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
+                    <top parent="topanchor" anchor="bottom" />
+                </anchored>
+                <static textres="cast_label_fullpower" />
+            </label>
 
             <genericcontrol name="hanchor">
                 <anchored width="0" height="0">
@@ -248,7 +326,7 @@
                 <tabtarget next="points" />
                 <script>
                     function onValueChanged()
-                        window.updateAllActionValues();
+                    window.updateAllActionValues();
                     end
                 </script>
             </basicnumber>
@@ -275,10 +353,10 @@
         </sheetdata>
     </windowclass>
 
-    <windowclass name="shape_spell">
+    <windowclass name="destruction_spell">
         <margins control="0,0,0,2" />
         <script file="campaign/scripts/spell2.lua" />
-<!--        <minisheet />-->
+        <!--        <minisheet />-->
         <sheetdata>
             <genericcontrol name="rightanchor">
                 <anchored width="0" height="0">
@@ -331,11 +409,11 @@
         <margins control="0,0,0,2" />
         <script>
             function usePower()
-                parentcontrol.window.usePower();
+            parentcontrol.window.usePower();
             end
 
             function onSpellCounterUpdate()
-                parentcontrol.window.windowlist.window.onSpellCounterUpdate();
+            parentcontrol.window.windowlist.window.onSpellCounterUpdate();
             end
         </script>
         <sheetdata>
@@ -350,13 +428,13 @@
                 <state icon="button_checkon" />
                 <script>
                     function onInit()
-                        onValueChanged();
+                    onValueChanged();
                     end
 
                     function onValueChanged()
-                        if getValue() == 1 then
-                            window.parentcontrol.window.windowlist.setSelection(window);
-                        end
+                    if getValue() == 1 then
+                    window.parentcontrol.window.windowlist.setSelection(window);
+                    end
                     end
                 </script>
             </buttonfield>
