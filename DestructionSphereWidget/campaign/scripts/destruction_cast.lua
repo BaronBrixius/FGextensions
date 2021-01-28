@@ -5,7 +5,7 @@ function onInit()
     DB.addHandler(DB.getPath(nodeCast.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
     DB.addHandler(DB.getPath(nodeCast.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 
-    doWithLock(updateDisplay)
+    doWithLock(updateCastDisplay)
 end
 
 function onClose()
@@ -30,26 +30,13 @@ function doWithLock(fFunction, aArguments)
 end
 
 function selectTalent(rNewTalent, sCategory)
-    Debug.chat('bub')
     if sCategory == "shapes" then
         doWithLock(clearOtherShapes, rNewTalent)
     elseif sCategory == "types" then
         doWithLock(clearOtherTypes, rNewTalent)
     end
 
-    setAsCostSource(rNewTalent.getDatabaseNode(), sCategory);
     updateCastDisplay();
-end
-
-function setAsCostSource(nodeShape, sCategory)      --todo probably don't need official 'sources' since the update is called so often
-    for k, v in pairs(self.cost.sources) do
-        if (string.match(k, sCategory, 1, 1)) then
-            v = nil;
-            self.cost.ops[k] = nil;
-        end
-    end
-
-    self.cost.addSourceWithOp(string.match(DB.getPath(nodeShape, "cost"), "destruction.*"), "+");
 end
 
 function clearOtherShapes(rSelectedShape)       --todo make this method not copypasted
@@ -75,21 +62,15 @@ end
 
 function getTalent(sCategory)
     for _, v in pairs(getDatabaseNode().getChild("destruction_" .. sCategory).getChildren()) do
-        if DB.getValue(v, ".selected", "number", 0) == 1 then
+        if DB.getValue(v, ".selected", 0) == 1 then
             return v;
         end
     end
     return nil;
 end
 
-function updateDisplay()
-    setAsCostSource(getTalent("shapes"), "shapes");
-    setAsCostSource(getTalent("types"), "types");
-    updateCastDisplay();
-end
-
 function updateCastDisplay()
-    self.cost.sourceUpdate();
+    updateCost();
     updateCastActionList();
     --Debug.chat(getDatabaseNode().getChild("destruction_shapes").getChildren())
     --Debug.chat(DB.getPath(retrieveShapeSelection().getChild("cost"), "cast.cost"))
@@ -110,7 +91,19 @@ function updateCastDisplay()
 end
 
 function updateCost()
-    Debug.chat('cost brrr')
+    local nCost = DB.getValue(getTalent("shapes"), "cost", 0) + DB.getValue(getTalent("types"), "cost", 0);
+
+    for _, v in pairs(getDatabaseNode().getChild("destruction_other").getChildren()) do
+        if DB.getValue(v, ".selected", 0) == 1 then
+            nCost = nCost + DB.getValue(v, "cost", 0);
+        end
+    end
+
+    if DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1 then
+        nCost = nCost + 1;
+    end
+
+    DB.setValue(getDatabaseNode(), "cast.cost", "number", nCost);
 end
 
 function updateCastActionList()
@@ -121,10 +114,20 @@ function updateCastActionList()
 
     copyActionsToCast(nodeActionsList, getTalent("shapes"));
     copyActionsToCast(nodeActionsList, getTalent("types"));
+
+    for _, v in pairs(getDatabaseNode().getChild("destruction_other").getChildren()) do
+        if DB.getValue(v, ".selected", 0) == 1 then
+            copyActionsToCast(nodeActionsList, v)
+        end
+    end
+
+    copySpellResistanceFromDamageToCast();
 end
 
-function copyActionsToCast(aCastActions, nodeTalent)    --todo remove detailbutton from action when copied over
+function copyActionsToCast(aCastActions, nodeTalent)
     if not nodeTalent then
+        Debug.chat(nodeTalent)
+        --addBasicAction(aCastActions) --todo
         return;
     end
     local aTalentActions = nodeTalent.getChild("spells.spell0.actions").getChildren();
@@ -136,16 +139,22 @@ function copyActionsToCast(aCastActions, nodeTalent)    --todo remove detailbutt
     table.sort(aKeys);
 
     for _,k in ipairs(aKeys) do
-        addAction(aCastActions, aTalentActions[k]);
+        addActions(aCastActions, aTalentActions[k]);
     end
 end
 
-function addAction(nodeActionsList, nodeAction)
+function addActions(nodeActionsList, nodeAction)   --todo remove detailbutton from action when copied over
     local nodeNewAction = nodeActionsList.createChild();
-    DB.copyNode(nodeAction, nodeNewAction)
+    DB.copyNode(nodeAction, nodeNewAction);
+    --Debug.chat(nodeNewAction.getPath().getControls())
+end
+
+function copySpellResistanceFromDamageToCast()
+    --todo
 end
 
 function activatePower()
+    Debug.chat('activate power')
     local nodeSpell = getDatabaseNode();
     if nodeSpell then
         ChatManager.Message(getDescription(), true, ActorManager.getActor("", nodeSpell.getChild(".....")));
@@ -255,7 +264,7 @@ function usePower()
 end
 
 function onSpellCounterUpdate()
-    Debug.chat('spellcounterupdate')
+    Debug.chat('spell counter update')
 end
 
 function updateAllActionValues()

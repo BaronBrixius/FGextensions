@@ -232,7 +232,7 @@
                     <left parent="topanchor" anchor="right" relation="relative" offset="7" />
                 </anchored>
             </number_chartotal>
-            <buttonfield name="selectspell" source=".selected">
+            <buttonfield name="fullpower" source=".fullpower">
                 <anchored width="12" height="12">
                     <top parent="topanchor" anchor="bottom" offset="3" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="15" />
@@ -432,9 +432,7 @@
                     end
 
                     function onValueChanged()
-                    if getValue() == 1 then
                     window.parentcontrol.window.windowlist.setSelection(window);
-                    end
                     end
                 </script>
             </buttonfield>
