@@ -1,7 +1,7 @@
 function onInit()
     local nodeCast = getDatabaseNode();
-    DB.addHandler(DB.getPath(nodeCast.getChild("destruction_shapes")), 'onChildUpdate', updateCastDisplay);
-    DB.addHandler(DB.getPath(nodeCast.getChild("destruction_types")), 'onChildUpdate', updateCastDisplay);
+    DB.addHandler(DB.getPath(nodeCast.getChild("spells.spell0.destruction_shapes")), 'onChildUpdate', updateCastDisplay);
+    DB.addHandler(DB.getPath(nodeCast.getChild("spells.spell0.destruction_types")), 'onChildUpdate', updateCastDisplay);
     DB.addHandler(DB.getPath(nodeCast.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
     DB.addHandler(DB.getPath(nodeCast.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 
@@ -10,8 +10,8 @@ end
 
 function onClose()
     local nodeCast = getDatabaseNode();
-    DB.removeHandler(DB.getPath(nodeCast.getChild("destruction_shapes")), 'onChildUpdate', updateCastDisplay);
-    DB.removeHandler(DB.getPath(nodeCast.getChild("destruction_types")), 'onChildUpdate', updateCastDisplay);
+    DB.removeHandler(DB.getPath(nodeCast.getChild("spells.spell0.destruction_shapes")), 'onChildUpdate', updateCastDisplay);
+    DB.removeHandler(DB.getPath(nodeCast.getChild("spells.spell0.destruction_types")), 'onChildUpdate', updateCastDisplay);
     DB.removeHandler(DB.getPath(nodeCast.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
     DB.removeHandler(DB.getPath(nodeCast.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 end
@@ -45,7 +45,7 @@ function clearOtherShapes(rSelectedShape)
     --    return;
     --end
     local rSelectedShapeNode = rSelectedShape.getDatabaseNode();
-    for _, v in pairs(getDatabaseNode().getChild("destruction_shapes").getChildren()) do
+    for _, v in pairs(getDatabaseNode().getChild("spells.spell0.destruction_shapes").getChildren()) do
         if v ~= rSelectedShapeNode then
             DB.setValue(v, ".selected", "number", 0);
         end
@@ -54,7 +54,7 @@ end
 
 function clearOtherTypes(rSelectedType)
     local rSelectedTypeNode = rSelectedType.getDatabaseNode();
-    for _, v in pairs(getDatabaseNode().getChild("destruction_types").getChildren()) do
+    for _, v in pairs(getDatabaseNode().getChild("spells.spell0.destruction_types").getChildren()) do
         if v ~= rSelectedTypeNode then
             DB.setValue(v, ".selected", "number", 0);
         end
@@ -62,7 +62,7 @@ function clearOtherTypes(rSelectedType)
 end
 
 function getTalent(sCategory)
-    for _, v in pairs(getDatabaseNode().getChild("destruction_" .. sCategory).getChildren()) do
+    for _, v in pairs(getDatabaseNode().getChild("spells.spell0.destruction_" .. sCategory).getChildren()) do
         if DB.getValue(v, ".selected", 0) == 1 then
             return v;
         end
@@ -88,7 +88,7 @@ function getAllSelectedTalents()
     local nodeType = getTalent("types") or nil;
 
     local aOtherTalents = { };
-    for _, talent in pairs(getDatabaseNode().getChild("destruction_other").getChildren()) do
+    for _, talent in pairs(getDatabaseNode().getChild("spells.spell0.destruction_other").getChildren()) do
         if DB.getValue(talent, ".selected", 0) == 1 then
             table.insert(aOtherTalents, talent);
         end
@@ -98,15 +98,7 @@ function getAllSelectedTalents()
 end
 
 function getTotalCost(nodeShape, nodeType, aOtherTalents)
-    local nCost = 0;
-
-    if nodeShape then
-        nCost = nCost + DB.getValue(nodeShape, "cost", 0);
-    end
-
-    if nodeType then
-        nCost = nCost + DB.getValue(nodeType, "cost", 0);
-    end
+    local nCost = DB.getValue(nodeShape, "cost", 0) + DB.getValue(nodeType, "cost", 0);
 
     for _, talent in pairs(aOtherTalents) do
         nCost = nCost + DB.getValue(talent, "cost", 0);
@@ -116,7 +108,7 @@ function getTotalCost(nodeShape, nodeType, aOtherTalents)
         nCost = nCost + 1;
     end
 
-    return nCost;
+    return math.max(nCost, 0);
 end
 
 function setCastActions(nodeShape, nodeType, aOtherTalents)
@@ -130,7 +122,7 @@ function setCastActions(nodeShape, nodeType, aOtherTalents)
     addTalentToCast(nodeActionsList, nodeShape, "shapes");
     addTalentToCast(nodeActionsList, nodeType, "types");
 
-    for _, v in ipairs(getDatabaseNode().getChild("destruction_other").getChildren()) do
+    for _, v in ipairs(getDatabaseNode().getChild("spells.spell0.destruction_other").getChildren()) do
         if DB.getValue(v, ".selected", 0) == 1 then
             addTalentToCast(nodeActionsList, v)
         end
@@ -151,7 +143,7 @@ function addTalentToCast(nodeCastActionsList, nodeTalent, sCategory)
         return ;
     end
 
-    local aTalentActions = nodeTalent.getChild("spells.spell0.actions").getChildren();
+    local aTalentActions = nodeTalent.getChild("actions").getChildren();
 
     local aKeys = { };
     for k in pairs(aTalentActions) do

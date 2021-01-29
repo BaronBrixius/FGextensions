@@ -84,7 +84,7 @@
                 </script>
             </header_column>
             <list_talents name="shape_list">
-                <datasource>.destruction_shapes</datasource>
+                <datasource>.spells.spell0.destruction_shapes</datasource>
                 <!--                todo why does this get called before the subwindow exists? -->
                 <script>
                     function onDrop(x, y, draginfo)
@@ -116,7 +116,7 @@
                 </script>
             </header_column>
             <list_talents name="type_list">
-                <datasource>.destruction_types</datasource>
+                <datasource>.spells.spell0.destruction_types</datasource>
                 <script>
                     function onDrop(x, y, draginfo)
                     return window.handleDrop(draginfo, getDatabaseNode());
@@ -148,7 +148,7 @@
                 <static textres="destruction_header_other" />
             </header_column>
             <list_talents name="other_list">
-                <datasource>.destruction_other</datasource>
+                <datasource>.spells.spell0.destruction_other</datasource>
                 <script>
                     function onDrop(x, y, draginfo)
                     return window.handleDrop(draginfo, getDatabaseNode());
@@ -355,7 +355,7 @@
 
     <windowclass name="destruction_spell">
         <margins control="0,0,0,2" />
-        <script file="campaign/scripts/spell2.lua" />
+        <script file="campaign/scripts/spell.lua" />
         <!--        <minisheet />-->
         <sheetdata>
             <genericcontrol name="rightanchor">
@@ -386,7 +386,7 @@
                     <left />
                     <right parent="rightanchor" anchor="left" relation="relative" />
                 </anchored>
-                <class>shape_header</class>
+                <class>talent_header</class>
                 <activate />
                 <fastinit />
             </subwindow>
@@ -398,14 +398,14 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <datasource>.spells.spell0.actions</datasource>
+                <datasource>.actions</datasource>
                 <class>spell_action</class>
                 <invisible />
             </windowlist>
         </sheetdata>
     </windowclass>
 
-    <windowclass name="shape_header">
+    <windowclass name="talent_header">
         <margins control="0,0,0,2" />
         <script>
             function usePower()
@@ -449,13 +449,13 @@
                 </anchored>
             </counter_spell>
 
-            <genericcontrol name="rightanchor">
+            <genericcontrol name="actionsmini">     <!-- just an anchor, named as such so I can use default spell.lua without nil pointer exceptions -->
                 <anchored position="insidetopright" width="0" height="0" />
             </genericcontrol>
             <string_spell name="shortdescription">
                 <anchored width="200" height="20">
                     <top offset="2" />
-                    <right parent="rightanchor" anchor="left" relation="relative" offset="-5" />
+                    <right parent="actionsmini" anchor="left" relation="relative" offset="-5" />
                 </anchored>
                 <empty textres="spell_emptydesc" />
             </string_spell>
@@ -464,7 +464,7 @@
                 <anchored>
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
-                    <right parent="rightanchor" anchor="left" relation="relative" offset="-10" />
+                    <right parent="actionsmini" anchor="left" relation="relative" offset="-10" />
                 </anchored>
                 <multilinespacing>20</multilinespacing>
                 <empty textres="library_recordtype_empty_spell" />
