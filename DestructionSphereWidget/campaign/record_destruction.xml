@@ -91,8 +91,14 @@
                     return window.handleDrop(draginfo, getDatabaseNode());
                     end
 
-                    function setSelection(shapeSelection)
-                    window.cast_window.subwindow.selectTalent(shapeSelection, "shapes")
+                    function setSelected(shapeSelection, selectionValue)
+                        local controller = window.cast_window.subwindow;
+                        if controller then
+                            if selectionValue == 1 then
+                                controller.clearNotSelectedTalents(getDatabaseNode(), shapeSelection.getDatabaseNode());
+                            end
+                            controller.updateCast();
+                        end
                     end
                 </script>
             </list_talents>
@@ -122,8 +128,14 @@
                     return window.handleDrop(draginfo, getDatabaseNode());
                     end
 
-                    function setSelection(typeSelection)
-                    window.cast_window.subwindow.selectTalent(typeSelection, "types")
+                    function setSelected(typeSelection, selectionValue)
+                        local controller = window.cast_window.subwindow;
+                        if controller then
+                            if selectionValue == 1 then
+                                controller.clearNotSelectedTalents(getDatabaseNode(), typeSelection.getDatabaseNode());
+                            end
+                            controller.updateCast();
+                        end
                     end
                 </script>
             </list_talents>
@@ -154,8 +166,7 @@
                     return window.handleDrop(draginfo, getDatabaseNode());
                     end
 
-                    function setSelection(typeSelection)
-                    window.cast_window.subwindow.selectTalent(typeSelection, "other")
+                    function setSelected(talentSelection)
                     end
                 </script>
             </list_talents>
@@ -226,12 +237,14 @@
                     <top parent="topanchor" anchor="bottom" relation="relative" offset="2" />
                 </anchored>
             </icon_usepower>
-            <number_chartotal name="cost" source="cast.cost">
+            <simplenumber name="castcost" source="cast.cost">
                 <anchored width="20" height="20">
                     <top parent="topanchor" anchor="bottom" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="7" />
                 </anchored>
-            </number_chartotal>
+                <readonly />
+                <frame name="fieldlight" offset="7,5,7,5" />
+            </simplenumber>
             <buttonfield name="fullpower" source=".fullpower">
                 <anchored width="12" height="12">
                     <top parent="topanchor" anchor="bottom" offset="3" />
@@ -240,12 +253,8 @@
                 <state icon="button_checkoff" />
                 <state icon="button_checkon" />
                 <script>
-                    function onInit()
-                    onValueChanged();
-                    end
-
                     function onValueChanged()
-                    window.updateCost();
+                    window.onTalentListUpdated();
                     end
                 </script>
             </buttonfield>
@@ -272,11 +281,6 @@
                 <min>0</min>
                 <tooltip textres="spell_tooltip_ppused" />
                 <tabtarget next="availablelevel0" prev="points" />
-                <script>
-                    function onValueChanged()
-                    window.onSpellCounterUpdate();
-                    end
-                </script>
             </basicnumber>
             <label name="label_pointsused">
                 <anchored>
@@ -356,7 +360,6 @@
     <windowclass name="destruction_spell">
         <margins control="0,0,0,2" />
         <script file="campaign/scripts/spell.lua" />
-        <!--        <minisheet />-->
         <sheetdata>
             <genericcontrol name="rightanchor">
                 <anchored width="0" height="0">
@@ -427,12 +430,8 @@
                 <state icon="button_checkoff" />
                 <state icon="button_checkon" />
                 <script>
-                    function onInit()
-                    onValueChanged();
-                    end
-
                     function onValueChanged()
-                    window.parentcontrol.window.windowlist.setSelection(window);
+                    window.parentcontrol.window.windowlist.setSelected(window, getValue());
                     end
                 </script>
             </buttonfield>
@@ -442,14 +441,9 @@
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
                 </anchored>
             </basicnumber>
-            <counter_spell name="counter">
-                <anchored>
-                    <top offset="2" />
-                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
-                </anchored>
-            </counter_spell>
 
-            <genericcontrol name="actionsmini">     <!-- just an anchor, named as such so I can use default spell.lua without nil pointer exceptions -->
+            <!-- just an anchor, named as such so I can use default spell.lua without nil pointer exceptions -->
+            <genericcontrol name="actionsmini">
                 <anchored position="insidetopright" width="0" height="0" />
             </genericcontrol>
             <string_spell name="shortdescription">
@@ -463,7 +457,7 @@
             <string_spell name="name">
                 <anchored>
                     <top offset="2" />
-                    <left parent="hanchor" anchor="right" relation="relative" offset="5" />
+                    <left parent="hanchor" anchor="right" relation="relative" offset="15" />
                     <right parent="actionsmini" anchor="left" relation="relative" offset="-10" />
                 </anchored>
                 <multilinespacing>20</multilinespacing>
