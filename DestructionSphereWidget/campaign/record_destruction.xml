@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <root>
-    <!--    based on power_heal_editor  -->
     <windowclass name="DestructionWidget">
-        <!--        <script file="scripts/destruction_widget.lua" />-->
         <frame>recordsheet</frame>
         <placement>
             <size width="575" height="400" />
@@ -53,57 +51,39 @@
                 <fastinit />
             </subwindow>
 
-            <!--            <subwindow name="cast_window">-->
-            <!--                <anchored>-->
-            <!--                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />-->
-            <!--                    <left offset="10" />-->
-            <!--                    <right offset="-10" />-->
-            <!--                </anchored>-->
-            <!--                <class>cast_box</class>-->
-            <!--                <center />-->
-            <!--                <activate />-->
-            <!--                <fastinit />-->
-            <!--            </subwindow>-->
-
             <header_column name="header_shape">
+                <frame name="rowshade" />
                 <static textres="destruction_header_shape" />
                 <script>
                     function onClickDown(button, x, y)
-                    return true;
+                        return true;
                     end
 
                     function onClickRelease(button, x, y)
-                    if DB.getChildCount(window.shape_list.getDatabaseNode(), "") == 0 then
-                    window.shape_list.createWindow();
-                    return true;
-                    end
+                        if DB.getChildCount(window.shape_list.getDatabaseNode(), "") == 0 then
+                            window.shape_list.createWindow();
+                            return true;
+                        end
 
-                    window.shape_list.setVisible(not window.shape_list.isVisible());
-                    return true;
+                        window.shape_list.setVisible(not window.shape_list.isVisible());
+                        return true;
                     end
                 </script>
             </header_column>
             <list_talents name="shape_list">
                 <datasource>.spells.spell0.destruction_shapes</datasource>
-                <!--                todo why does this get called before the subwindow exists? -->
                 <script>
-                    function onDrop(x, y, draginfo)
-                    return window.handleDrop(draginfo, getDatabaseNode());
-                    end
-
                     function setSelected(shapeSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            if selectionValue == 1 then
-                                controller.clearNotSelectedTalents(getDatabaseNode(), shapeSelection.getDatabaseNode());
-                            end
-                            controller.updateCast();
+                            controller.clearNotSelectedTalents(getDatabaseNode(), shapeSelection.getDatabaseNode());
                         end
                     end
                 </script>
             </list_talents>
 
             <header_column name="header_type">
+                <frame name="rowshade" />
                 <static textres="destruction_header_type" />
                 <script>
                     function onClickDown(button, x, y)
@@ -111,62 +91,52 @@
                     end
 
                     function onClickRelease(button, x, y)
-                    if DB.getChildCount(window.type_list.getDatabaseNode(), "") == 0 then
-                    window.type_list.createWindow();
-                    return true;
-                    end
+                        if DB.getChildCount(window.type_list.getDatabaseNode(), "") == 0 then
+                            window.type_list.createWindow();
+                            return true;
+                        end
 
-                    window.type_list.setVisible(not window.type_list.isVisible());
-                    return true;
+                        window.type_list.setVisible(not window.type_list.isVisible());
+                        return true;
                     end
                 </script>
             </header_column>
             <list_talents name="type_list">
                 <datasource>.spells.spell0.destruction_types</datasource>
                 <script>
-                    function onDrop(x, y, draginfo)
-                    return window.handleDrop(draginfo, getDatabaseNode());
-                    end
-
                     function setSelected(typeSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            if selectionValue == 1 then
-                                controller.clearNotSelectedTalents(getDatabaseNode(), typeSelection.getDatabaseNode());
-                            end
-                            controller.updateCast();
+                            controller.clearNotSelectedTalents(getDatabaseNode(), typeSelection.getDatabaseNode());
                         end
                     end
                 </script>
             </list_talents>
 
-            <!-- todo implement Other category (and also 1PP for full Caster Level to damage dice ability) -->
             <header_column name="header_other">
+                <frame name="rowshade" />
+                <static textres="destruction_header_other" />
                 <script>
                     function onClickDown(button, x, y)
-                    return true;
+                        return true;
                     end
 
                     function onClickRelease(button, x, y)
-                    if DB.getChildCount(window.other_list.getDatabaseNode(), "") == 0 then
-                    window.other_list.createWindow();
-                    return true;
-                    end
+                        if DB.getChildCount(window.other_list.getDatabaseNode(), "") == 0 then
+                            window.other_list.createWindow();
+                            return true;
+                        end
 
-                    window.other_list.setVisible(not window.other_list.isVisible());
-                    return true;
+                        window.other_list.setVisible(not window.other_list.isVisible());
+                        return true;
                     end
                 </script>
-                <static textres="destruction_header_other" />
             </header_column>
             <list_talents name="other_list">
                 <datasource>.spells.spell0.destruction_other</datasource>
                 <script>
-                    function onDrop(x, y, draginfo)
-                    return window.handleDrop(draginfo, getDatabaseNode());
-                    end
-
                     function setSelected(talentSelection)
+                    return true;
                     end
                 </script>
             </list_talents>
@@ -175,6 +145,7 @@
 
     <template name="list_talents">
         <list_text>
+<!--            <child><backcolor /></child>-->
             <anchored>
                 <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                 <left offset="5" />
@@ -184,7 +155,7 @@
                 <control>name</control>
             </sortby>
             <newfocus>name</newfocus>
-            <class>destruction_spell</class>
+            <class>destruction_talent</class>
         </list_text>
     </template>
 
@@ -199,42 +170,42 @@
                 <invisible />
             </genericcontrol>
 
-            <!--            <button_roll name="castbutton">-->
-            <!--                <script>-->
-            <!--                    function action(draginfo)-->
-            <!--                    local sSubRoll = nil;-->
-            <!--                    if subroll then-->
-            <!--                    sSubRoll = subroll[1];-->
-            <!--                    end-->
+<!--            <button_roll name="castbutton">-->
+<!--                <script>-->
+<!--                    function action(draginfo)-->
+<!--                    local sSubRoll = nil;-->
+<!--                    if subroll then-->
+<!--                    sSubRoll = subroll[1];-->
+<!--                    end-->
 
-            <!--                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
-            <!--                    end-->
+<!--                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
+<!--                    end-->
 
-            <!--                    function onButtonPress()-->
-            <!--                    action();-->
-            <!--                    end-->
+<!--                    function onButtonPress()-->
+<!--                    action();-->
+<!--                    end-->
 
-            <!--                    function onDragStart(button, x, y, draginfo)-->
-            <!--                    action(draginfo);-->
-            <!--                    return true;-->
-            <!--                    end-->
-            <!--                </script>-->
-            <!--                <anchored>-->
-            <!--                    <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
-            <!--                    <top parent="topanchor" anchor="bottom" />-->
-            <!--                </anchored>-->
-            <!--            </button_roll>-->
-            <!--            <label name="castlabel">-->
-            <!--                <anchored>-->
-            <!--                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
-            <!--                    <top parent="topanchor" anchor="bottom" />-->
-            <!--                </anchored>-->
-            <!--                <static textres="spell_label_cast" />-->
-            <!--            </label>-->
+<!--                    function onDragStart(button, x, y, draginfo)-->
+<!--                    action(draginfo);-->
+<!--                    return true;-->
+<!--                    end-->
+<!--                </script>-->
+<!--                <anchored>-->
+<!--                    <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
+<!--                    <top parent="topanchor" anchor="bottom" />-->
+<!--                </anchored>-->
+<!--            </button_roll>-->
+<!--            <label name="castlabel">-->
+<!--                <anchored>-->
+<!--                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
+<!--                    <top parent="topanchor" anchor="bottom" />-->
+<!--                </anchored>-->
+<!--                <static textres="spell_label_cast" />-->
+<!--            </label>-->
             <icon_usepower name="usepower">
-                <anchored width="17" height="17">
+                <anchored width="15" height="15">
                     <left parent="topanchor" anchor="right" relation="relative" offset="20" />
-                    <top parent="topanchor" anchor="bottom" relation="relative" offset="2" />
+                    <top parent="topanchor" anchor="bottom" relation="relative" offset="3" />
                 </anchored>
             </icon_usepower>
             <simplenumber name="castcost" source="cast.cost">
@@ -254,7 +225,7 @@
                 <state icon="button_checkon" />
                 <script>
                     function onValueChanged()
-                    window.onTalentListUpdated();
+                        window.updateCast();
                     end
                 </script>
             </buttonfield>
@@ -325,12 +296,12 @@
                     <top parent="hanchor" anchor="bottom" />
                     <right parent="hanchor" anchor="left" relation="relative" offset="-10" />
                 </anchored>
-                <min>0</min>
+                <min>1</min>
                 <tooltip textres="casterlevel" />
                 <tabtarget next="points" />
                 <script>
                     function onValueChanged()
-                    window.updateAllActionValues();
+                        window.updateAllActionValues();
                     end
                 </script>
             </basicnumber>
@@ -357,9 +328,9 @@
         </sheetdata>
     </windowclass>
 
-    <windowclass name="destruction_spell">
+    <windowclass name="destruction_talent">
         <margins control="0,0,0,2" />
-        <script file="campaign/scripts/spell.lua" />
+        <script file="campaign/scripts/destruction_talent.lua" />
         <sheetdata>
             <genericcontrol name="rightanchor">
                 <anchored width="0" height="0">
@@ -410,15 +381,6 @@
 
     <windowclass name="talent_header">
         <margins control="0,0,0,2" />
-        <script>
-            function usePower()
-            parentcontrol.window.usePower();
-            end
-
-            function onSpellCounterUpdate()
-            parentcontrol.window.windowlist.window.onSpellCounterUpdate();
-            end
-        </script>
         <sheetdata>
             <anchor_column name="hanchor" />
 
@@ -431,7 +393,9 @@
                 <state icon="button_checkon" />
                 <script>
                     function onValueChanged()
-                    window.parentcontrol.window.windowlist.setSelected(window, getValue());
+                        if getValue() == 1 then
+                            window.parentcontrol.window.windowlist.setSelected(window);
+                        end
                     end
                 </script>
             </buttonfield>
@@ -442,14 +406,14 @@
                 </anchored>
             </basicnumber>
 
-            <!-- just an anchor, named as such so I can use default spell.lua without nil pointer exceptions -->
-            <genericcontrol name="actionsmini">
+            <!-- just an anchor, named rightanchor so I can use default spell.lua without nil pointer exceptions -->
+            <genericcontrol name="rightanchor">
                 <anchored position="insidetopright" width="0" height="0" />
             </genericcontrol>
             <string_spell name="shortdescription">
                 <anchored width="200" height="20">
                     <top offset="2" />
-                    <right parent="actionsmini" anchor="left" relation="relative" offset="-5" />
+                    <right parent="rightanchor" anchor="left" relation="relative" offset="-5" />
                 </anchored>
                 <empty textres="spell_emptydesc" />
             </string_spell>
@@ -458,7 +422,7 @@
                 <anchored>
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="15" />
-                    <right parent="actionsmini" anchor="left" relation="relative" offset="-10" />
+                    <right parent="rightanchor" anchor="left" relation="relative" offset="-10" />
                 </anchored>
                 <multilinespacing>20</multilinespacing>
                 <empty textres="library_recordtype_empty_spell" />
@@ -466,27 +430,26 @@
                     function onDoubleClick(x, y)
                     DB.setValue(window.getDatabaseNode(), ".selected", "number", 1);
                     end
-
-                    function onDragStart(button, x, y, draginfo)
-                    local node = window.getDatabaseNode();
-                    if not node then
-                    return false;
-                    end
-
-                    local nLevel = 0;
-                    local nodeSpellLevel = node.getChild("...");
-                    if nodeSpellLevel then
-                    nLevel = tonumber(string.sub(nodeSpellLevel.getName(), 6)) or 0;
-                    end
-
-                    draginfo.setType("spellmove");
-                    draginfo.setStringData(getValue());
-                    draginfo.setNumberData(nLevel);
-                    draginfo.setDatabaseNode(node);
-
-                    return true;
-                    end
                 </script>
+                <!--                function onDragStart(button, x, y, draginfo)-->
+                <!--                local node = window.getDatabaseNode();-->
+                <!--                if not node then-->
+                <!--                return false;-->
+                <!--                end-->
+
+                <!--                local nLevel = 0;-->
+                <!--                local nodeSpellLevel = node.getChild("...");-->
+                <!--                if nodeSpellLevel then-->
+                <!--                nLevel = tonumber(string.sub(nodeSpellLevel.getName(), 6)) or 0;-->
+                <!--                end-->
+
+                <!--                draginfo.setType("spellmove");-->
+                <!--                draginfo.setStringData(getValue());-->
+                <!--                draginfo.setNumberData(nLevel);-->
+                <!--                draginfo.setDatabaseNode(node);-->
+
+                <!--                return true;-->
+                <!--                end-->
             </string_spell>
         </sheetdata>
     </windowclass>
