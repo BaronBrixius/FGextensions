@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <root>
-    <windowclass name="DestructionWidget">
+    <windowclass name="destruction_window">
         <frame>recordsheet</frame>
         <placement>
             <size width="575" height="400" />
@@ -10,7 +10,6 @@
             <dynamic />
         </sizelimits>
         <nodelete />
-        <playercontrol />
         <tooltip control="name" />
         <sheetdata>
             <windowtitlebar name="title">
@@ -18,6 +17,13 @@
             </windowtitlebar>
 
             <frame_record_editor name="contentframe" />
+
+            <windowreferencecontrol>
+                <bounds>0,0,60,60</bounds>
+                <icon normal="destruction_sphere" pressed="destruction_sphere_shadow" empty="destruction_sphere" />
+                <class>destruction_window</class>
+                <description text="Destruction Sphere"/>
+            </windowreferencecontrol>
 
             <subwindow_record name="main">
                 <class>destruction_editor_main</class>
@@ -406,7 +412,6 @@
                 </anchored>
             </basicnumber>
 
-            <!-- just an anchor, named rightanchor so I can use default spell.lua without nil pointer exceptions -->
             <genericcontrol name="rightanchor">
                 <anchored position="insidetopright" width="0" height="0" />
             </genericcontrol>
@@ -431,395 +436,31 @@
                     DB.setValue(window.getDatabaseNode(), ".selected", "number", 1);
                     end
                 </script>
-                <!--                function onDragStart(button, x, y, draginfo)-->
-                <!--                local node = window.getDatabaseNode();-->
-                <!--                if not node then-->
-                <!--                return false;-->
-                <!--                end-->
-
-                <!--                local nLevel = 0;-->
-                <!--                local nodeSpellLevel = node.getChild("...");-->
-                <!--                if nodeSpellLevel then-->
-                <!--                nLevel = tonumber(string.sub(nodeSpellLevel.getName(), 6)) or 0;-->
-                <!--                end-->
-
-                <!--                draginfo.setType("spellmove");-->
-                <!--                draginfo.setStringData(getValue());-->
-                <!--                draginfo.setNumberData(nLevel);-->
-                <!--                draginfo.setDatabaseNode(node);-->
-
-                <!--                return true;-->
-                <!--                end-->
             </string_spell>
         </sheetdata>
     </windowclass>
 
-    <windowclass name="spell_class">
-        <margins control="0,0,0,5" />
-        <script file="campaign/scripts/spell_class.lua" />
+    <windowclass name="spell_class" merge="join">
+        <script>
+            function onInit()
+                super.onInit();
+                registerMenuItem(Interface.getString("menu_opendestructionwindow"), "destruction_sphere", 8);
+            end
+
+            function onMenuSelection(selection, subselection)
+                super.onMenuSelection(selection, subselection);
+                if selection == 8 then
+                    destruction_window_button.activate();
+                end
+            end
+        </script>
         <sheetdata>
-            <button_iconcycler name="castertype">
-                <bounds>10,10,20,20</bounds>
-                <parameters>
-                    <defaulticon>caster_prep</defaulticon>
-                    <defaulttooltipres>spell_tooltip_casterprep</defaulttooltipres>
-                    <icons>caster_spontaneous|caster_points</icons>
-                    <tooltipsres>spell_tooltip_casterspontaneous|spell_tooltip_casterpoints</tooltipsres>
-                    <values>spontaneous|points</values>
-                </parameters>
-                <script>
-                    function onValueChanged()
-                    window.onCasterTypeChanged();
-                    end
-                </script>
-            </button_iconcycler>
-
-            <genericcontrol name="hanchor">
-                <anchored width="0" height="0">
-                    <top />
-                    <right offset="-3" />
-                </anchored>
+            <windowreferencecontrol name="destruction_window_button">
+                <anchored to="frame_stat" position="insidetopright" offset="-75,0" />
+                <class>destruction_window</class>
                 <invisible />
-            </genericcontrol>
-            <button_idelete name="idelete">
-                <anchored>
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-            </button_idelete>
-            <button_toggledetail name="activatedetail">
-                <anchored>
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <anchored position="insidetopright" offset="8,12" />
-            </button_toggledetail>
-            <basicnumber name="pointsused">
-                <anchored width="20" height="20">
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <min>0</min>
-                <tooltip textres="spell_tooltip_ppused" />
-                <tabtarget next="availablelevel0" prev="points" />
-                <script>
-                    function onValueChanged()
-                    window.onSpellCounterUpdate();
-                    end
-                </script>
-            </basicnumber>
-            <label name="label_pointsused">
-                <anchored>
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <static>/</static>
-            </label>
-            <basicnumber name="points">
-                <anchored width="20" height="20">
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <min>0</min>
-                <tooltip textres="spell_tooltip_ppmax" />
-                <tabtarget next="pointsused" prev="cl" />
-                <script>
-                    function onValueChanged()
-                    window.onSpellCounterUpdate();
-                    end
-                </script>
-            </basicnumber>
-            <label name="label_points">
-                <anchored>
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <static textres="spell_label_pp" />
-            </label>
-            <button_cc name="button_cc">
-                <anchored width="20" height="20">
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <tooltip textres="spell_tooltip_cc" />
-            </button_cc>
-            <label name="label_cc">
-                <anchored>
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <static textres="spell_label_cc" />
-                <tooltip textres="spell_tooltip_cc" />
-            </label>
-            <basicnumber name="cl">
-                <anchored width="20" height="20">
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-10" />
-                </anchored>
-                <min>0</min>
-                <tooltip textres="casterlevel" />
-                <tabtarget next="points" prev="label" />
-                <script>
-                    function onValueChanged()
-                    window.onStatUpdate();
-                    end
-                </script>
-            </basicnumber>
-            <label name="label_cl">
-                <anchored>
-                    <top offset="12" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-10" />
-                </anchored>
-                <static textres="cl" />
-                <tooltip textres="casterlevel" />
-            </label>
-            <stringu name="label">
-                <anchored height="20">
-                    <top offset="12" />
-                    <left parent="castertype" anchor="right" offset="5" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
-                </anchored>
-                <font>reference-b</font>
-                <empty textres="spellclass_emptyname" />
-                <tabtarget next="cl" />
-            </stringu>
-
-            <genericcontrol name="detailanchor">
-                <bounds>0,35,0,0</bounds>
-            </genericcontrol>
-
-            <genericcontrol name="frame_levels">
-                <anchored width="325" height="55">
-                    <top parent="detailanchor" anchor="bottom" relation="relative" />
-                    <left offset="5" />
-                </anchored>
-                <frame name="groupbox3" />
-            </genericcontrol>
-
-            <label name="availablelevel_label">
-                <anchored to="frame_levels" position="insidetopleft" offset="15,25" />
-                <static textres="level" />
-            </label>
-            <genericcontrol name="availablelevel">
-                <anchored to="frame_levels" position="insidetopleft" offset="55,25" width="1" height="25" />
-            </genericcontrol>
-            <number_spellsavailable name="availablelevel0">
-                <tabtarget next="availablelevel1" prev="pointsused" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel1">
-                <tabtarget next="availablelevel2" prev="availablelevel0" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel2">
-                <tabtarget next="availablelevel3" prev="availablelevel1" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel3">
-                <tabtarget next="availablelevel4" prev="availablelevel2" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel4">
-                <tabtarget next="availablelevel5" prev="availablelevel3" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel5">
-                <tabtarget next="availablelevel6" prev="availablelevel4" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel6">
-                <tabtarget next="availablelevel7" prev="availablelevel5" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel7">
-                <tabtarget next="availablelevel8" prev="availablelevel6" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel8">
-                <tabtarget next="availablelevel9" prev="availablelevel7" />
-            </number_spellsavailable>
-            <number_spellsavailable name="availablelevel9">
-                <tabtarget next="dcmisc" prev="availablelevel8" />
-            </number_spellsavailable>
-            <label_fieldtop name="availablelevel0_label">
-                <anchored to="availablelevel0" />
-                <static>0</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel1_label">
-                <anchored to="availablelevel1" />
-                <static>1</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel2_label">
-                <anchored to="availablelevel2" />
-                <static>2</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel3_label">
-                <anchored to="availablelevel3" />
-                <static>3</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel4_label">
-                <anchored to="availablelevel4" />
-                <static>4</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel5_label">
-                <anchored to="availablelevel5" />
-                <static>5</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel6_label">
-                <anchored to="availablelevel6" />
-                <static>6</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel7_label">
-                <anchored to="availablelevel7" />
-                <static>7</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel8_label">
-                <anchored to="availablelevel8" />
-                <static>8</static>
-            </label_fieldtop>
-            <label_fieldtop name="availablelevel9_label">
-                <anchored to="availablelevel9" />
-                <static>9</static>
-            </label_fieldtop>
-
-            <genericcontrol name="frame_dc">
-                <anchored width="180" height="55">
-                    <top parent="detailanchor" anchor="bottom" relation="relative" />
-                    <left offset="5" />
-                </anchored>
-                <frame name="groupbox3" />
-            </genericcontrol>
-
-            <label name="dc_label">
-                <anchored to="frame_dc" position="insidetopleft" offset="15,25" />
-                <static textres="spell_label_basedc" />
-            </label>
-            <number name="dcstatmod" source="dc.abilitymod">
-                <anchored to="frame_dc" position="insidetopleft" offset="75,25" width="30" height="20" />
-                <font>sheetnumber</font>
-                <readonly />
-                <displaysign />
-                <disabled />
-            </number>
-            <label_fieldtop name="dcstatmod_label">
-                <anchored to="dcstatmod" />
-                <static textres="spell_label_ability" />
-            </label_fieldtop>
-            <number_spell name="dcmisc" source="dc.misc">
-                <anchored to="dcstatmod" position="righthigh" offset="5,0" width="15" />
-                <tabtarget next="sp" prev="availablelevel9" />
-            </number_spell>
-            <label_fieldtop name="dcmisc_label">
-                <anchored to="dcmisc" />
-                <static textres="spell_label_misc" />
-            </label_fieldtop>
-            <number_spelldc name="dctotal" source="dc.total">
-                <anchored to="dcmisc" position="righthigh" offset="10,0" />
-                <description textres="spell_tooltip_basedc" />
-            </number_spelldc>
-            <label_fieldtop name="dctotal_label">
-                <anchored to="dctotal" />
-                <static textres="spell_label_total" />
-            </label_fieldtop>
-
-            <genericcontrol name="frame_stat">
-                <anchored to="frame_dc" width="150" height="55">
-                    <top />
-                    <left anchor="right" offset="-5" />
-                </anchored>
-                <frame name="groupbox3" />
-            </genericcontrol>
-
-            <label name="ability_label">
-                <anchored to="frame_stat" position="insidetopleft" offset="15,25" />
-                <static textres="spell_label_baseability" />
-            </label>
-            <cycler_ability name="dcstat">
-                <anchored to="frame_stat" position="insidetopleft" offset="80,25" width="50" height="20" />
-                <source>
-                    <name>dc.ability</name>
-                </source>
-                <parameters>
-                    <defaultlabelres>dash</defaultlabelres>
-                </parameters>
-                <script>
-                    function onValueChanged()
-                    window.onStatUpdate();
-                    end
-                </script>
-            </cycler_ability>
-            <label_fieldtop name="dcstat_label">
-                <anchored to="dcstat" />
-                <static textres="spell_label_ability" />
-            </label_fieldtop>
-
-            <genericcontrol name="frame_sp">
-                <anchored width="180" height="55">
-                    <top parent="detailanchor" anchor="bottom" relation="relative" />
-                    <left offset="5" />
-                </anchored>
-                <frame name="groupbox3" />
-            </genericcontrol>
-
-            <label name="spmain_label">
-                <anchored to="frame_sp" position="insidetopleft" offset="15,25" />
-                <static textres="spell_label_sp" />
-            </label>
-            <number_spell name="sp">
-                <anchored to="frame_sp" position="insidetopleft" offset="140,25" />
-                <script>
-                    function onValueChanged()
-                    window.onStatUpdate();
-                    end
-                </script>
-            </number_spell>
-            <label_fieldtop name="sp_label">
-                <anchored to="sp" />
-                <static textres="spell_label_mod" />
-            </label_fieldtop>
-
-            <genericcontrol name="frame_cc">
-                <anchored to="frame_sp" width="150" height="55">
-                    <top />
-                    <left anchor="right" offset="-5" />
-                </anchored>
-                <frame name="groupbox3" />
-            </genericcontrol>
-
-            <label name="label_cc">
-                <anchored to="frame_cc" position="insidetopleft" offset="15,25" />
-                <static textres="spell_label_ccdetail" />
-            </label>
-            <number_spell name="ccmisc" source="cc.misc">
-                <anchored to="frame_cc" position="insidetopleft" offset="105,25" />
-            </number_spell>
-            <label_fieldtop name="ccmisc_label">
-                <anchored to="ccmisc" />
-                <static textres="spell_label_mod" />
-            </label_fieldtop>
-
-            <genericcontrol name="classframe">
-                <anchored>
-                    <top offset="6" />
-                    <left offset="6" />
-                    <right offset="-6" />
-                    <bottom parent="detailanchor" relation="relative" anchor="bottom" offset="6" />
-                </anchored>
-                <frame name="groupbox2" offset="6,6,6,6" />
-                <disabled />
-            </genericcontrol>
-
-            <!--            -->
-
-            <linkcontrol name="DestructionWidgetButton">
-                <anchored width="20" height="20" to="frame_stat" position="insidetopright" offset="75,25" />
-                <!--                <tooltip textres="spell_tooltip_cc" />-->
-                <class>DestructionWidget</class>
-            </linkcontrol>
-            <!--                -->
-
-
-            <list_spelllevel name="levels">
-                <anchored>
-                    <top parent="classframe" anchor="bottom" offset="8" />
-                    <left />
-                    <right />
-                </anchored>
-                <class>spell_level</class>
-                <tabtarget prev="sp" />
-            </list_spelllevel>
+                <disabled/>
+            </windowreferencecontrol>
         </sheetdata>
     </windowclass>
 </root>

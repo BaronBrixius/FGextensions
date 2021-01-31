@@ -33,17 +33,14 @@ function setDataChangedLock(bNewValue)
     bDataChangedLock = bNewValue;
 end
 
-function updateCast()   --todo find better way to determine when it should update, currently either overupdates if the handler points to this, or underupdates if not
+function updateCast()
     if bDataChangedLock then
         return false;
     end
 
-    Debug.chat("updatecast")
-
     local nodeShape, nodeType, aOtherTalents = getAllSelectedTalents();
     updatePPCost(nodeShape, nodeType, aOtherTalents);
     rebuildCastActions(nodeShape, nodeType, aOtherTalents);
-
 end
 
 function updatePPCost(nodeShape, nodeType, aOtherTalents)
@@ -96,10 +93,8 @@ function rebuildCastActions(nodeShape, nodeType, aOtherTalents)
     local bFullPower = (DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1);
     addTypeToCast(nodeActionsList, nodeType, bFullPower);
 
-    for _, nodeTalent in ipairs(getDatabaseNode().getChild("spells.spell0.destruction_other").getChildren()) do
-        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
-            copyTalentActionsToCast(nodeActionsList, nodeTalent)
-        end
+    for _, nodeTalent in pairs(aOtherTalents) do
+        copyTalentActionsToCast(nodeActionsList, nodeTalent)
     end
 end
 
@@ -225,8 +220,7 @@ function clearNotSelectedTalents(nodeTalentList, nodeSelection)
 end
 
 function onSpellAction(draginfo, nodeAction, sSubRoll)
-    --todo cast should use PP and cast all actions until failure
-    Debug.chat('cast button')
+    --Debug.chat('cast button')
 
     --createDisplay();
 
@@ -321,7 +315,7 @@ function usePower()
             DB.setValue(nodeSpell, ".pointsused", "number", nPPUsed);
         end
     else
-        sMessage = DB.getValue(nodeSpell, "name", "");
+        sMessage = DB.getValue(nodeSpell, "name", "") .. " [SPELL CLASS DOES NOT USE PP]";
     end
 
     ChatManager.Message(sMessage, ActorManager.isPC(rActor), rActor);
@@ -333,8 +327,6 @@ function updateAllActionValues()
 end
 
 function updateCastActionValues()
-    Debug.chat("updatevalues")
-
     for _, w in pairs(destruction_actions.getWindows()) do
         w.updateViews();
     end

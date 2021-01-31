@@ -1,28 +1,31 @@
 <?xml version='1.0' encoding='ISO-8859-1'?>
 <root version="3.0">
     <properties>
-        <name>Destruction Sphere Widget</name>
+        <name>Destruction Sphere Window</name>
         <author>Kiqjaq</author>
 
         <ruleset>
             <name>PFRPG</name>
         </ruleset>
-        <loadorder>70</loadorder>
+        <loadorder>72</loadorder>
     </properties>
 
-    <announcement text="Destruction Sphere Widget loaded" font="systemfont" />
+    <announcement text="Destruction Sphere Window loaded" font="systemfont" />
 
     <base>
-        <script name="DestructionSphereWidget" file="scripts/destruction_widget.lua" />
+        <!--    XML         -->
         <includefile source="campaign/record_destruction.xml" />
-        <string name="menu_adddestructionsphere">Add Destruction Sphere</string>
 
-        <!--  Widget Strings      -->
-        <string name="power_header_destruction">Destruction Actions</string>
+        <!--    Strings     -->
+        <string name="menu_opendestructionwindow">Open Destruction Window</string>
+        <string name="power_header_destruction">Destruction Sphere</string>
         <string name="destruction_header_shape">Shape</string>
         <string name="destruction_header_type">Type</string>
         <string name="destruction_header_other">Other</string>
-
         <string name="cast_label_fullpower">Full Power</string>
+
+        <!--    Icons       -->
+        <icon name="destruction_sphere" file="graphics/buttons/destruction_sphere.png" />
+        <icon name="destruction_sphere_shadow" file="graphics/buttons/destruction_sphere_shadow.png" />
     </base>
 </root>
