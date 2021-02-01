@@ -82,7 +82,7 @@
                     function setSelected(shapeSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            controller.clearNotSelectedTalents(getDatabaseNode(), shapeSelection.getDatabaseNode());
+                            controller.setShape(shapeSelection.getDatabaseNode(), selectionValue);
                         end
                     end
                 </script>
@@ -113,7 +113,7 @@
                     function setSelected(typeSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            controller.clearNotSelectedTalents(getDatabaseNode(), typeSelection.getDatabaseNode());
+                            controller.setType(typeSelection.getDatabaseNode(), selectionValue);
                         end
                     end
                 </script>
@@ -141,8 +141,11 @@
             <list_talents name="other_list">
                 <datasource>.spells.spell0.destruction_other</datasource>
                 <script>
-                    function setSelected(talentSelection)
-                    return true;
+                    function setSelected(talentSelection, selectionValue)
+                        local controller = window.cast_window.subwindow;
+                        if controller then
+                            controller.setOtherTalent(talentSelection.getDatabaseNode(), selectionValue);
+                        end
                     end
                 </script>
             </list_talents>
@@ -231,7 +234,7 @@
                 <state icon="button_checkon" />
                 <script>
                     function onValueChanged()
-                        window.updateCast();
+                        window.updatePPCost();
                     end
                 </script>
             </buttonfield>
@@ -327,6 +330,13 @@
                     <right />
                 </anchored>
                 <noscroll />
+<!--                <script>-->
+<!--                    function onSortCompare(w1, w2)-->
+<!--                        Debug.chat(DB.getValue(w1.getDatabaseNode(), "id"))-->
+
+<!--                    end-->
+<!--                </script>-->
+                <sortby><field>talenttype</field><field>name</field></sortby>
                 <!-- dummy nodes to fix relative references -->
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action</class>
@@ -399,9 +409,7 @@
                 <state icon="button_checkon" />
                 <script>
                     function onValueChanged()
-                        if getValue() == 1 then
-                            window.parentcontrol.window.windowlist.setSelected(window);
-                        end
+                        window.parentcontrol.window.windowlist.setSelected(window, getValue());
                     end
                 </script>
             </buttonfield>

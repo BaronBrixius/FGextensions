@@ -1,30 +1,24 @@
+
+local nodeShape;
+local nodeType;
+local aOtherTalents = { };
+
 function onInit()
     local nodeCastBox = getDatabaseNode();
-    DB.addHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_shapes")), 'onChildUpdate', updateCast);
-    DB.addHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_types")), 'onChildUpdate', updateCast);
-    DB.addHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_other")), 'onChildUpdate', updateCast);
+    --DB.addHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_shapes")), 'onChildUpdate', resetShapeActions);
+    --DB.addHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_types")), 'onChildUpdate', resetTypeActions);
+    --DB.addHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_other")), 'onChildUpdate', resetOtherTalentActions);
     DB.addHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
     DB.addHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
-
-    updateCast()
 end
 
 function onClose()
     local nodeCastBox = getDatabaseNode();
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_shapes")), 'onChildUpdate', updateCast);
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_types")), 'onChildUpdate', updateCast);
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_other")), 'onChildUpdate', updateCast);
+    --DB.removeHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_shapes")), 'onChildUpdate', resetShapeActions);
+    --DB.removeHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_types")), 'onChildUpdate', resetTypeActions);
+    --DB.removeHandler(DB.getPath(nodeCastBox.getChild("spells.spell0.destruction_other")), 'onChildUpdate', resetOtherTalentActions);
     DB.removeHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
     DB.removeHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
-end
-
-function getTalent(sCategory)
-    for _, v in pairs(getDatabaseNode().getChild("spells.spell0.destruction_" .. sCategory).getChildren()) do
-        if DB.getValue(v, ".selected", 0) == 1 then
-            return v;
-        end
-    end
-    return nil;
 end
 
 local bDataChangedLock = false;
@@ -33,38 +27,11 @@ function setDataChangedLock(bNewValue)
     bDataChangedLock = bNewValue;
 end
 
-function updateCast()
-    if bDataChangedLock then
-        return false;
-    end
-
-    local nodeShape, nodeType, aOtherTalents = getAllSelectedTalents();
-    updatePPCost(nodeShape, nodeType, aOtherTalents);
-    rebuildCastActions(nodeShape, nodeType, aOtherTalents);
-end
-
-function updatePPCost(nodeShape, nodeType, aOtherTalents)
-    if not aOtherTalents then
-        nodeShape, nodeType, aOtherTalents = getAllSelectedTalents();
-    end
+function updatePPCost()
     DB.setValue(getDatabaseNode(), "cast.cost", "number", getTotalPPCost(nodeShape, nodeType, aOtherTalents));
 end
 
-function getAllSelectedTalents()
-    local nodeShape = getTalent("shapes") or nil;
-    local nodeType = getTalent("types") or nil;
-
-    local aOtherTalents = { };
-    for _, talent in pairs(getDatabaseNode().getChild("spells.spell0.destruction_other").getChildren()) do
-        if DB.getValue(talent, ".selected", 0) == 1 then
-            table.insert(aOtherTalents, talent);
-        end
-    end
-
-    return nodeShape, nodeType, aOtherTalents;
-end
-
-function getTotalPPCost(nodeShape, nodeType, aOtherTalents)
+function getTotalPPCost()
     local nCost = DB.getValue(nodeShape, "cost", 0)
             + DB.getValue(nodeType, "cost", 0);
 
@@ -79,41 +46,25 @@ function getTotalPPCost(nodeShape, nodeType, aOtherTalents)
     return math.max(nCost, 0);
 end
 
-function rebuildCastActions(nodeShape, nodeType, aOtherTalents)
-    if not aOtherTalents then
-        nodeShape, nodeType, aOtherTalents = getAllSelectedTalents();
+function resetShapeActions()
+    local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
+    for _, v in pairs(nodeCastActionsList.getChildren()) do
+        if DB.getValue(v, "talenttype") == "shape" then
+            DB.deleteNode(v);
+        end
     end
 
-    local nodeActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    DB.deleteChildren(nodeActionsList)
+    local bIgnoreSpellResist = getSpellResistPropertyFromType();
 
-    local bIgnoreSpellResist = getSpellResistPropertyFromType(nodeType);
-    addShapeToCast(nodeActionsList, nodeShape, bIgnoreSpellResist);
-
-    local bFullPower = (DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1);
-    addTypeToCast(nodeActionsList, nodeType, bFullPower);
-
-    for _, nodeTalent in pairs(aOtherTalents) do
-        copyTalentActionsToCast(nodeActionsList, nodeTalent)
-    end
-end
-
-function addShapeToCast(nodeCastActionsList, nodeShape, bIgnoreSpellResist)
     if not nodeShape then
         createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist);
         return ;
     end
 
-    local aTalentActions = nodeShape.getChild("actions").getChildren();
-
-    local aKeys = { };
-    for k in pairs(aTalentActions) do
-        table.insert(aKeys, k);
-    end
-    table.sort(aKeys);
-
-    for _, k in ipairs(aKeys) do
-        local nodeNewAction = copyActionToCast(nodeCastActionsList, aTalentActions[k]);
+    local aShapeActions = nodeShape.getChild("actions").getChildren();
+    for _, v in pairs(aShapeActions) do
+        local nodeNewAction = copyActionToCast(nodeCastActionsList, v);
+        DB.setValue(nodeNewAction, "talenttype", "string", "shape");
         if DB.getValue(nodeNewAction, "type") == "cast" then
             applySpellResistIgnore(nodeNewAction, bIgnoreSpellResist);
         end
@@ -124,6 +75,8 @@ function createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist)
     local nodeNewAction = nodeCastActionsList.createChild();
     DB.setValue(nodeNewAction, "type", "string", "cast");
     DB.setValue(nodeNewAction, "atktype", "string", "rtouch");
+    DB.setValue(nodeNewAction, "talenttype", "string", "shape");
+
     applySpellResistIgnore(nodeNewAction, bIgnoreSpellResist);
 end
 
@@ -135,22 +88,25 @@ function applySpellResistIgnore(nodeAction, bIgnoreSpellResist)
     end
 end
 
-function addTypeToCast(nodeCastActionsList, nodeType, bFullPower)
+function resetTypeActions()
+    local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
+    for _, v in pairs(nodeCastActionsList.getChildren()) do
+        if DB.getValue(v, "talenttype") == "type" then
+            DB.deleteNode(v);
+        end
+    end
+
+    local bFullPower = DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1;
     if not nodeType then
-        createBasicDamageAction(nodeCastActionsList);
+        createBasicDamageAction(nodeCastActionsList, bFullPower);
         return ;
     end
 
-    local aTalentActions = nodeType.getChild("actions").getChildren();
+    local aTypeActions = nodeType.getChild("actions").getChildren();
 
-    local aKeys = { };
-    for k in pairs(aTalentActions) do
-        table.insert(aKeys, k);
-    end
-    table.sort(aKeys);
-
-    for _, k in ipairs(aKeys) do
-        local nodeNewAction = copyActionToCast(nodeCastActionsList, aTalentActions[k]);
+    for _, action in pairs(aTypeActions) do
+        local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
+        DB.setValue(nodeNewAction, "talenttype", "string", "type");
         if bFullPower and DB.getValue(nodeNewAction, "type") == "damage" then
             for _, dmgEntry in pairs(nodeNewAction.getChild("damagelist").getChildren()) do
                 if DB.getValue(dmgEntry, "dicestat") == "oddcl" then
@@ -164,6 +120,7 @@ end
 function createBasicDamageAction(nodeCastActionsList, bFullPower)
     local nodeNewAction = nodeCastActionsList.createChild();
     DB.setValue(nodeNewAction, "type", "string", "damage");
+    DB.setValue(nodeNewAction, "talenttype", "string", "type");
 
     local nodeDmgList = nodeNewAction.createChild("damagelist");
     local nodeDmgEntry = nodeDmgList.createChild();
@@ -174,6 +131,22 @@ function createBasicDamageAction(nodeCastActionsList, bFullPower)
         DB.setValue(nodeDmgEntry, "dicestat", "string", "cl");
     else
         DB.setValue(nodeDmgEntry, "dicestat", "string", "oddcl");
+    end
+end
+
+function resetOtherTalentActions()
+    local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
+    for _, v in pairs(nodeCastActionsList.getChildren()) do
+        if DB.getValue(v, "talenttype") == "zOther" then
+            DB.deleteNode(v);
+        end
+    end
+
+    for _, talent in pairs(aOtherTalents) do
+        for _, action in pairs(talent.getChild("actions").getChildren()) do
+            local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
+            DB.setValue(nodeNewAction, "talenttype", "string", "zOther");
+        end
     end
 end
 
@@ -198,10 +171,11 @@ function copyActionToCast(nodeCastActionsList, nodeAction)
     return nodeNewAction;
 end
 
-function getSpellResistPropertyFromType(nodeType)
+function getSpellResistPropertyFromType()
     if not nodeType then
         return false;
     end
+
     for _, typeAction in pairs(nodeType.getChild("actions").getChildren()) do
         if DB.getValue(typeAction, "type") == "damage" and DB.getValue(typeAction, "dmgnotspell", 0) == 1 then
             return true;
@@ -211,13 +185,57 @@ function getSpellResistPropertyFromType(nodeType)
     return false;
 end
 
-function clearNotSelectedTalents(nodeTalentList, nodeSelection)
-    for _, v in pairs(nodeTalentList.getChildren()) do
-        if v ~= nodeSelection then
-            DB.setValue(v, ".selected", "number", 0);
-        end
+function setShape(nodeTalent, nSelectionValue)
+    if bDataChangedLock then
+        return;
     end
+    setDataChangedLock(true);
+
+    if nSelectionValue == 0 then
+        nodeShape = nil;
+    else
+        DB.setValue(nodeShape, ".selected", "number", 0);
+        nodeShape = nodeTalent;
+    end
+
+    resetShapeActions();
+    setDataChangedLock(false);
 end
+
+function setType(nodeTalent, nSelectionValue)
+    if bDataChangedLock then
+        return;
+    end
+    setDataChangedLock(true);
+
+    if nSelectionValue == 0 then
+        nodeType = nil;
+    else
+        DB.setValue(nodeType, ".selected", "number", 0);
+        nodeType = nodeTalent;
+    end
+
+    resetTypeActions();
+    setDataChangedLock(false);
+end
+
+function setOtherTalent(nodeTalent, nSelectionValue)
+    if bDataChangedLock then
+        return;
+    end
+    setDataChangedLock(true);
+    
+    local sName = nodeTalent.getNodeName();
+    if nSelectionValue == 0 then
+        aOtherTalents[sName] = nil;
+    else
+        aOtherTalents[sName] = nodeTalent;
+    end
+
+    resetOtherTalentActions();
+    setDataChangedLock(false);
+end
+
 
 function onSpellAction(draginfo, nodeAction, sSubRoll)
     --Debug.chat('cast button')
