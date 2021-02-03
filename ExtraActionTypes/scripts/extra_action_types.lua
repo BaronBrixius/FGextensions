@@ -122,39 +122,26 @@ function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamag
         return "spdamage", sDamage:gsub("%[HEAL", "[DAMAGE") .. " [TYPE: positive, spell (" .. nTotal .. ")]", nTotal;
     end
 
-    -- todo this is the damage parsing code copied: just invert the negative damage, and if the result is negative then return as a heal instead of sending a dumb message
     if sRollType:find("damage") and sDamage:find("negative", 1, 1) then
-        local aDamageTypes = {};
         local nNegativeDamage = 0;
         local nOtherDamage = 0;
         for sDamageType in sDamage:gmatch("%[TYPE: ([^%]]+)%]") do
-            local sDmgType = StringManager.trim(sDamageType:match("^([^(%]]+)"));
-            local sDice, sTotal = sDamageType:match("%(([%d%+%-Dd]+)%=(%d+)%)");
-            if not sDice then
-                sTotal = sDamageType:match("%((%d+)%)")
-            end
-            local nDmgTypeTotal = tonumber(sTotal) or 0;
+            local nDmgTypeTotal = tonumber(sDamageType:match(".-(%d+)%)")) or 0;
 
-            if sDmgType:find("negative", 1, 1) then
+            if sDamageType:find("negative", 1, 1) then
                 nNegativeDamage = nNegativeDamage + nDmgTypeTotal;
             else
-                if aDamageTypes[sDmgType] then
-                    aDamageTypes[sDmgType] = aDamageTypes[sDmgType] + nDmgTypeTotal;
-                else
-                    aDamageTypes[sDmgType] = nDmgTypeTotal;
-                end
                 nOtherDamage = nOtherDamage + nDmgTypeTotal;
             end
         end
 
         if nOtherDamage > 0 then
-            newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage:gsub("%[TYPE.-negative.-%)%]", ""), nOtherDamage)
+            newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage:gsub("%[TYPE[^%]]-negative.-%)%]", ""), nOtherDamage)
         end
 
         if nNegativeDamage > 0 then
             return "heal", sDamage:gsub("%[DAMAGE", "[HEAL"):gsub("%[TYPE.*", ""), nNegativeDamage;
         end
-
     end
 
     return sRollType, sDamage, nTotal;
