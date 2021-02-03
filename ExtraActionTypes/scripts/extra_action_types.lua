@@ -4,7 +4,6 @@
 local oldOnSpellAction;
 local oldGetActionAttackText;
 local oldApplyDamage;
-local oldOnEffectActorStartTurn;
 local oldOnEffectEndTurn;
 local oldCustomOnEffectAddIgnoreCheck;
 local oldApplyAttack;
@@ -58,9 +57,6 @@ function onInit()
     ActionsManager.performAction = newPerformAction;
     ActionsManager.registerResultHandler("concentration", handleConcentrationCheck);
 
-    oldOnEffectActorStartTurn = EffectManager.fCustomOnEffectActorStartTurn;
-    EffectManager.setCustomOnEffectActorStartTurn(checkConcentrationEffectOnActorStartTurn);
-
     -- Combo Hotkeys
     OptionsManager.registerOption2("COMBOHOTKEYS", true, "option_header_client", "option_label_COMBOHOTKEYS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
     Interface.onHotkeyDrop = onHotkeyDrop;
@@ -75,25 +71,6 @@ function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
     end
 
     return nodeNew;
-end
-
-function checkConcentrationEffectOnActorStartTurn(nodeActor, nodeEffect)
-    if oldOnEffectActorStartTurn then
-        if oldOnEffectActorStartTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit) then
-            return true;
-        end
-    end
-
-    if not string.find(DB.getValue(nodeEffect, "label", ""):lower(), "concentration:", 1, true) then
-        return false;
-    end
-
-    for _, v in pairs(nodeActor.createChild("effects").getChildren()) do
-        local sLabel = DB.getValue(v, "label", "");
-        if string.find(sLabel, "Entangled") then
-            forceConcentrationCheck(nodeActor, nodeEffect, 5)
-        end
-    end
 end
 
 function newOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
@@ -116,12 +93,18 @@ end
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     local nHealthBeforeAttack = getTotalHP(rTarget);
 
-    local nNewTotal = applyTempHPChanges(nTotal, rTarget, sDamage);
-    oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nNewTotal);
+    if ActorManager2.isCreatureType(rTarget, "undead") then
+        sRollType, sDamage, nTotal = applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
+    end
+
+    nTotal = applyTempHPChanges(nTotal, rTarget, sDamage)
+
+    oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
 
     local nHealthLost = nHealthBeforeAttack - getTotalHP(rTarget);
     if nHealthLost > 0 then
-        if string.find(sDamage, "Ongoing", 1, true) then  --todo this isn't supposed to roll if effect just expired
+        if string.find(sDamage, "Ongoing", 1, true) then
+            --todo this isn't supposed to roll if effect just expired
             nHealthLost = math.max(1, math.floor(nHealthLost / 2))
         elseif wasHitByAttackOrFailedSave(rTarget) then
             setVitalityLossState(rTarget, false);
@@ -134,6 +117,49 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     end
 end
 
+function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
+    if sRollType == "heal" then
+        return "spdamage", sDamage:gsub("%[HEAL", "[DAMAGE") .. " [TYPE: positive, spell (" .. nTotal .. ")]", nTotal;
+    end
+
+    -- todo this is the damage parsing code copied: just invert the negative damage, and if the result is negative then return as a heal instead of sending a dumb message
+    if sRollType:find("damage") and sDamage:find("negative", 1, 1) then
+        local aDamageTypes = {};
+        local nNegativeDamage = 0;
+        local nOtherDamage = 0;
+        for sDamageType in sDamage:gmatch("%[TYPE: ([^%]]+)%]") do
+            local sDmgType = StringManager.trim(sDamageType:match("^([^(%]]+)"));
+            local sDice, sTotal = sDamageType:match("%(([%d%+%-Dd]+)%=(%d+)%)");
+            if not sDice then
+                sTotal = sDamageType:match("%((%d+)%)")
+            end
+            local nDmgTypeTotal = tonumber(sTotal) or 0;
+
+            if sDmgType:find("negative", 1, 1) then
+                nNegativeDamage = nNegativeDamage + nDmgTypeTotal;
+            else
+                if aDamageTypes[sDmgType] then
+                    aDamageTypes[sDmgType] = aDamageTypes[sDmgType] + nDmgTypeTotal;
+                else
+                    aDamageTypes[sDmgType] = nDmgTypeTotal;
+                end
+                nOtherDamage = nOtherDamage + nDmgTypeTotal;
+            end
+        end
+
+        if nOtherDamage > 0 then
+            newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage:gsub("%[TYPE.-negative.-%)%]", ""), nOtherDamage)
+        end
+
+        if nNegativeDamage > 0 then
+            return "heal", sDamage:gsub("%[DAMAGE", "[HEAL"):gsub("%[TYPE.*", ""), nNegativeDamage;
+        end
+
+    end
+
+    return sRollType, sDamage, nTotal;
+end
+
 function getTotalHP(rActor)
     local nodeTarget = ActorManager.getCreatureNode(rActor);
     return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0) + DB.getValue(nodeTarget, "hp.temporary", 0);
@@ -141,7 +167,6 @@ end
 
 function applyTempHPChanges(nTotal, rTarget, sDamage)
     if not string.match(sDamage, "%[TEMP%]") then
-        --string.match(sDamage, "%[HEAL") and
         return nTotal;
     end
 
@@ -171,15 +196,37 @@ function applyTempHPChanges(nTotal, rTarget, sDamage)
     return nNewTotal;
 end
 
-function newGetSpellActionDemoralize(rActor, nodeAction, sSubRoll)
+function newGetSpellAction(rActor, nodeAction, sSubRoll)
     local rAction = SpellManager.getSpellAction(rActor, nodeAction, sSubRoll);  --old version of the function
 
+    applyDemoralizeAction(rAction, nodeAction);
+    applyAlternateScaling(rActor, rAction, nodeAction)
+
+    return rAction;
+end
+
+function applyDemoralizeAction(rAction, nodeAction)
     if rAction.type == "cast" and DB.getValue(nodeAction, "atktype", "") == "demoralize" then
         rAction.demo = true;
         rAction.range = nil;
     end
+end
 
-    return rAction;
+function applyAlternateScaling(rActor, rAction, nodeAction)
+    if rAction.type ~= "cast" then
+        return ;
+    end
+
+    local sBase = DB.getValue(nodeAction, "attackbabreplace", "");
+    if sBase == "cl" then
+        rAction.modifier = rAction.modifier - ActorManager2.getAbilityScore(rActor, "bab") + DB.getValue(nodeAction, ".......cl", "");
+    end
+
+    local sStat = DB.getValue(nodeAction, "attackstatreplace", "");
+    if sStat ~= "" and sStat ~= rAction.stat then
+        rAction.modifier = rAction.modifier - ActorManager2.getAbilityBonus(rActor, rAction.stat) + ActorManager2.getAbilityBonus(rActor, sStat);
+        rAction.stat = sStat;
+    end
 end
 
 function getHealRollTempHPEffects(rActor, rAction)
@@ -203,7 +250,7 @@ function newOnSpellActionDemoralize(draginfo, nodeAction, sSubRoll)
         return ;
     end
 
-    local rAction = newGetSpellActionDemoralize(rActor, nodeAction, sSubRoll);
+    local rAction = newGetSpellAction(rActor, nodeAction, sSubRoll);
 
     local rRolls = {};
     if rAction.type == "cast" then
