@@ -34,7 +34,20 @@ function onMenuSelection(selection, subselection)
         activatedetail.setValue(1);
 
         setCastDataChangedLock(false);
-        self.windowlist.window.cast_window.subwindow.updateCast();
+
+
+        if DB.getValue(getDatabaseNode(), ".selected") ~= 1 then
+            return;
+        end
+
+        local sCategory = getDatabaseNode().getPath():match("%.destruction_([^%.]+)");
+        if sCategory == "shapes" then
+            self.windowlist.window.cast_window.subwindow.resetShapeActions();
+        elseif sCategory == "types" then
+            self.windowlist.window.cast_window.subwindow.resetTypeActions();
+        elseif sCateogry == "other" then
+            self.windowlist.window.cast_window.subwindow.resetOtherTalentActions();
+        end
     end
 end
 

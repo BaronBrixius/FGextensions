@@ -40,7 +40,6 @@
         </sheetdata>
     </windowclass>
 
-
     <windowclass name="destruction_editor_main">
         <sheetdata>
             <anchor_column name="columnanchor" />
@@ -330,12 +329,6 @@
                     <right />
                 </anchored>
                 <noscroll />
-<!--                <script>-->
-<!--                    function onSortCompare(w1, w2)-->
-<!--                        Debug.chat(DB.getValue(w1.getDatabaseNode(), "id"))-->
-
-<!--                    end-->
-<!--                </script>-->
                 <sortby><field>talenttype</field><field>name</field></sortby>
                 <!-- dummy nodes to fix relative references -->
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
