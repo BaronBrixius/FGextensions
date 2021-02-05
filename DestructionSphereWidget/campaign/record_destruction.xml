@@ -335,12 +335,29 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <!--  todo better secondary sorting (try to match original sorting without using a whole loop to get the keys              -->
-                <sortby>
-                    <field>talenttype</field>
-                    <field>name</field>
-                </sortby>
-                <!-- dummy nodes to fix relative references -->
+                <script>
+                    function onSortCompare(w1, w2)
+                        local node1 = w1.getDatabaseNode();
+                        local node2 = w2.getDatabaseNode();
+
+                        local sType1 = DB.getValue(node1, "talenttype");
+                        local sType2 = DB.getValue(node2, "talenttype");
+
+                        if sType1 == sType2 then
+                            return node2.getNodeName() > node1.getNodeName();
+                        end;
+
+                        if sType1 == "other" then
+                            sType1 = "zOther"
+                        end;
+
+                        if sType2 == "other" then
+                            sType2 = "zOther"
+                        end;
+
+                        return sType1 > sType2;
+                    end
+                </script>
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action</class>
             </windowlist>
@@ -417,6 +434,13 @@
                 </script>
             </buttonfield>
             <basicnumber name="costdisplay" source="cost">
+                <script>
+                    function onValueChanged()
+                        if window.selectspell.getValue() == 1 then
+                            window.parentcontrol.window.windowlist.window.cast_window.subwindow.updatePPCost();
+                        end
+                    end
+                </script>
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />

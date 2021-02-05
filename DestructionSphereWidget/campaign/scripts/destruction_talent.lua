@@ -34,15 +34,16 @@ function onMenuSelection(selection, subselection)
         getDatabaseNode().delete();
     elseif selection == 3 then
         setCastDataChangedLock(true);
-        local nodeAction = getDatabaseNode().createChild("actions").createChild();
+        local nodeNewAction = getDatabaseNode().createChild("actions").createChild();
+        DB.setValue(nodeNewAction, "talenttype", "string", sCategory);
         if subselection == 2 then
-            setUpNewCast(nodeAction);
+            setUpNewCast(nodeNewAction);
         elseif subselection == 3 then
-            setUpNewDamage(nodeAction);
+            setUpNewDamage(nodeNewAction);
         elseif subselection == 4 then
-            setUpNewHeal(nodeAction);
+            setUpNewHeal(nodeNewAction);
         elseif subselection == 5 then
-            setUpNewEffect(nodeAction);
+            setUpNewEffect(nodeNewAction);
         end
         activatedetail.setValue(1);
 
@@ -57,7 +58,7 @@ function onMenuSelection(selection, subselection)
         elseif sCategory == "types" then
             castWindow.resetTypeActions();
         elseif sCategory == "other" then
-            castWindow.resetOtherTalentActions();
+            castWindow.resetOtherActions();
         end
     end
 end

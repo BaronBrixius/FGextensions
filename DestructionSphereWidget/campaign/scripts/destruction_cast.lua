@@ -85,7 +85,7 @@ function resetShapeActions()
 
     Debug.chat("updateshape")
     local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "shape");
+    deleteActionsInCategory(nodeCastActionsList, "shapes");
 
     local bIgnoreSpellResist = getSpellResistPropertyFromType();
 
@@ -97,7 +97,6 @@ function resetShapeActions()
 
     for _, v in pairs(nodeShape.getChild("actions").getChildren()) do
         local nodeNewAction = copyActionToCast(nodeCastActionsList, v);
-        DB.setValue(nodeNewAction, "talenttype", "string", "shape");
         if DB.getValue(nodeNewAction, "type") == "cast" then
             DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
         end
@@ -124,7 +123,7 @@ function createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist)
     local nodeNewAction = nodeCastActionsList.createChild();
     DB.setValue(nodeNewAction, "type", "string", "cast");
     DB.setValue(nodeNewAction, "atktype", "string", "rtouch");
-    DB.setValue(nodeNewAction, "talenttype", "string", "shape");
+    DB.setValue(nodeNewAction, "talenttype", "string", "shapes");
 
     DB.setValue(nodeAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
 end
@@ -138,7 +137,7 @@ function resetTypeActions()
     Debug.chat("updatetype")
 
     local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "type");
+    deleteActionsInCategory(nodeCastActionsList, "types");
 
     local bFullPower = DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1;
 
@@ -152,7 +151,6 @@ function resetTypeActions()
 
     for _, action in pairs(nodeType.getChild("actions").getChildren()) do
         local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
-        DB.setValue(nodeNewAction, "talenttype", "string", "type");         --todo set talenttype in destruction_talent on creation
         if bFullPower and DB.getValue(nodeNewAction, "type") == "damage" then
             for _, dmgEntry in pairs(nodeNewAction.getChild("damagelist").getChildren()) do
                 if DB.getValue(dmgEntry, "dicestat") == "oddcl" then
@@ -184,7 +182,7 @@ end
 function createBasicDamageAction(nodeCastActionsList, bFullPower)
     local nodeNewAction = nodeCastActionsList.createChild();
     DB.setValue(nodeNewAction, "type", "string", "damage");
-    DB.setValue(nodeNewAction, "talenttype", "string", "type");
+    DB.setValue(nodeNewAction, "talenttype", "string", "types");
 
     local nodeDmgList = nodeNewAction.createChild("damagelist");
     local nodeDmgEntry = nodeDmgList.createChild();
@@ -207,12 +205,11 @@ function resetOtherActions()
     Debug.chat("updateother")
 
     local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "zOther");
+    deleteActionsInCategory(nodeCastActionsList, "other");
 
     for _, talent in pairs(aOtherTalents) do
         for _, action in pairs(talent.getChild("actions").getChildren()) do
-            local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
-            DB.setValue(nodeNewAction, "talenttype", "string", "zOther");
+            copyActionToCast(nodeCastActionsList, action);
         end
     end
 
