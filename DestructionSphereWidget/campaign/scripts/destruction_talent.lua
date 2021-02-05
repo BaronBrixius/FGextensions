@@ -17,7 +17,20 @@ function toggleDetail()
 end
 
 function onMenuSelection(selection, subselection)
+    local nSelected = DB.getValue(getDatabaseNode(), ".selected");
+    local castWindow = self.windowlist.window.cast_window.subwindow;
+    local sCategory = getDatabaseNode().getPath():match("%.destruction_([^%.]+)");
+
     if selection == 6 and subselection == 7 then
+        if nSelected == 1 then
+            if sCategory == "shapes" then
+                castWindow.clearShapeSelection();
+            elseif sCategory == "types" then
+                castWindow.clearTypeSelection();
+            elseif sCategory == "other" then
+                castWindow.clearOtherSelection(getDatabaseNode().getNodeName());
+            end
+        end
         getDatabaseNode().delete();
     elseif selection == 3 then
         setCastDataChangedLock(true);
@@ -35,18 +48,16 @@ function onMenuSelection(selection, subselection)
 
         setCastDataChangedLock(false);
 
-
-        if DB.getValue(getDatabaseNode(), ".selected") ~= 1 then
+        if not nSelected == 1 then
             return;
         end
 
-        local sCategory = getDatabaseNode().getPath():match("%.destruction_([^%.]+)");
         if sCategory == "shapes" then
-            self.windowlist.window.cast_window.subwindow.resetShapeActions();
+            castWindow.resetShapeActions();
         elseif sCategory == "types" then
-            self.windowlist.window.cast_window.subwindow.resetTypeActions();
-        elseif sCateogry == "other" then
-            self.windowlist.window.cast_window.subwindow.resetOtherTalentActions();
+            castWindow.resetTypeActions();
+        elseif sCategory == "other" then
+            castWindow.resetOtherTalentActions();
         end
     end
 end

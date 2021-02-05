@@ -22,7 +22,7 @@
                 <bounds>0,0,60,60</bounds>
                 <icon normal="destruction_sphere" pressed="destruction_sphere_shadow" empty="destruction_sphere" />
                 <class>destruction_window</class>
-                <description text="Destruction Sphere"/>
+                <description text="Destruction Sphere" />
             </windowreferencecontrol>
 
             <subwindow_record name="main">
@@ -153,7 +153,7 @@
 
     <template name="list_talents">
         <list_text>
-<!--            <child><backcolor /></child>-->
+            <!--            <child><backcolor /></child>-->
             <anchored>
                 <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                 <left offset="5" />
@@ -178,38 +178,38 @@
                 <invisible />
             </genericcontrol>
 
-<!--            <button_roll name="castbutton">-->
-<!--                <script>-->
-<!--                    function action(draginfo)-->
-<!--                    local sSubRoll = nil;-->
-<!--                    if subroll then-->
-<!--                    sSubRoll = subroll[1];-->
-<!--                    end-->
+            <!-- <button_roll name="castbutton">-->
+            <!--     <script>-->
+            <!--         function action(draginfo)-->
+            <!--         local sSubRoll = nil;-->
+            <!--         if subroll then-->
+            <!--         sSubRoll = subroll[1];-->
+            <!--         end-->
 
-<!--                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
-<!--                    end-->
+            <!--         window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
+            <!--         end-->
 
-<!--                    function onButtonPress()-->
-<!--                    action();-->
-<!--                    end-->
+            <!--         function onButtonPress()-->
+            <!--         action();-->
+            <!--         end-->
 
-<!--                    function onDragStart(button, x, y, draginfo)-->
-<!--                    action(draginfo);-->
-<!--                    return true;-->
-<!--                    end-->
-<!--                </script>-->
-<!--                <anchored>-->
-<!--                    <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
-<!--                    <top parent="topanchor" anchor="bottom" />-->
-<!--                </anchored>-->
-<!--            </button_roll>-->
-<!--            <label name="castlabel">-->
-<!--                <anchored>-->
-<!--                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
-<!--                    <top parent="topanchor" anchor="bottom" />-->
-<!--                </anchored>-->
-<!--                <static textres="spell_label_cast" />-->
-<!--            </label>-->
+            <!--         function onDragStart(button, x, y, draginfo)-->
+            <!--         action(draginfo);-->
+            <!--         return true;-->
+            <!--         end-->
+            <!--     </script>-->
+            <!--     <anchored>-->
+            <!--         <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
+            <!--         <top parent="topanchor" anchor="bottom" />-->
+            <!--     </anchored>-->
+            <!-- </button_roll>-->
+            <!-- <label name="castlabel">-->
+            <!--     <anchored>-->
+            <!--         <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
+            <!--         <top parent="topanchor" anchor="bottom" />-->
+            <!--     </anchored>-->
+            <!--     <static textres="spell_label_cast" />-->
+            <!-- </label>-->
             <icon_usepower name="usepower">
                 <anchored width="15" height="15">
                     <left parent="topanchor" anchor="right" relation="relative" offset="20" />
@@ -229,11 +229,17 @@
                     <top parent="topanchor" anchor="bottom" offset="3" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="15" />
                 </anchored>
+                <!-- todo prettier font for Full Power -->
+                <!--                <font name="defaultstringcontrol">-->
+                <!--                    <fgffile name="graphics/fonts/regular-10.fgf" />-->
+                <!--                    <ttf file="graphics/fonts/Noto_Sans/NotoSans-Regular.ttf" name="Noto Sans" size="16" />-->
+                <!--                    <color value="#000000" />-->
+                <!--                </font>-->
                 <state icon="button_checkoff" />
                 <state icon="button_checkon" />
                 <script>
                     function onValueChanged()
-                        window.updatePPCost();
+                        window.fullPowerToggled(getValue());
                     end
                 </script>
             </buttonfield>
@@ -329,7 +335,11 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <sortby><field>talenttype</field><field>name</field></sortby>
+                <!--  todo better secondary sorting (try to match original sorting without using a whole loop to get the keys              -->
+                <sortby>
+                    <field>talenttype</field>
+                    <field>name</field>
+                </sortby>
                 <!-- dummy nodes to fix relative references -->
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action</class>
@@ -460,7 +470,7 @@
                 <anchored to="frame_stat" position="insidetopright" offset="-75,0" />
                 <class>destruction_window</class>
                 <invisible />
-                <disabled/>
+                <disabled />
             </windowreferencecontrol>
         </sheetdata>
     </windowclass>
