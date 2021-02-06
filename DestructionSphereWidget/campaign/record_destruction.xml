@@ -3,10 +3,10 @@
     <windowclass name="destruction_window">
         <frame>recordsheet</frame>
         <placement>
-            <size width="575" height="400" />
+            <size width="560" height="400" />
         </placement>
         <sizelimits>
-            <minimum width="575" height="140" />
+            <minimum width="560" height="140" />
             <dynamic />
         </sizelimits>
         <nodelete />
@@ -46,9 +46,9 @@
 
             <subwindow name="cast_window">
                 <anchored>
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="10" />
-                    <right offset="-10" />
+                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="5" />
+                    <left offset="5" />
+                    <right offset="-5" />
                 </anchored>
                 <class>cast_box</class>
                 <center />
@@ -153,16 +153,13 @@
 
     <template name="list_talents">
         <list_text>
-            <!--            <child><backcolor /></child>-->
+            <child><backcolor /></child>
             <anchored>
                 <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                 <left offset="5" />
                 <right offset="-5" />
             </anchored>
-            <sortby>
-                <control>name</control>
-            </sortby>
-            <newfocus>name</newfocus>
+            <sortby><field>name</field></sortby>
             <class>destruction_talent</class>
         </list_text>
     </template>
@@ -173,43 +170,11 @@
         <margins control="0,0,0,20" />
         <sheetdata>
             <genericcontrol name="topanchor">
-                <anchored position="insidetopleft" offset="30,23" />
+                <anchored position="insidetopleft" offset="25,23" />
                 <disabled />
                 <invisible />
             </genericcontrol>
 
-            <!-- <button_roll name="castbutton">-->
-            <!--     <script>-->
-            <!--         function action(draginfo)-->
-            <!--         local sSubRoll = nil;-->
-            <!--         if subroll then-->
-            <!--         sSubRoll = subroll[1];-->
-            <!--         end-->
-
-            <!--         window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
-            <!--         end-->
-
-            <!--         function onButtonPress()-->
-            <!--         action();-->
-            <!--         end-->
-
-            <!--         function onDragStart(button, x, y, draginfo)-->
-            <!--         action(draginfo);-->
-            <!--         return true;-->
-            <!--         end-->
-            <!--     </script>-->
-            <!--     <anchored>-->
-            <!--         <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
-            <!--         <top parent="topanchor" anchor="bottom" />-->
-            <!--     </anchored>-->
-            <!-- </button_roll>-->
-            <!-- <label name="castlabel">-->
-            <!--     <anchored>-->
-            <!--         <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
-            <!--         <top parent="topanchor" anchor="bottom" />-->
-            <!--     </anchored>-->
-            <!--     <static textres="spell_label_cast" />-->
-            <!-- </label>-->
             <icon_usepower name="usepower">
                 <anchored width="15" height="15">
                     <left parent="topanchor" anchor="right" relation="relative" offset="20" />
@@ -225,31 +190,19 @@
                 <frame name="fieldlight" offset="7,5,7,5" />
             </simplenumber>
             <buttonfield name="fullpower" source=".fullpower">
-                <anchored width="12" height="12">
-                    <top parent="topanchor" anchor="bottom" offset="3" />
-                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                <anchored width="107" height="25">
+                    <top parent="topanchor" anchor="bottom" offset="-4" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="18" />
                 </anchored>
-                <!-- todo prettier font for Full Power -->
-                <!--                <font name="defaultstringcontrol">-->
-                <!--                    <fgffile name="graphics/fonts/regular-10.fgf" />-->
-                <!--                    <ttf file="graphics/fonts/Noto_Sans/NotoSans-Regular.ttf" name="Noto Sans" size="16" />-->
-                <!--                    <color value="#000000" />-->
-                <!--                </font>-->
-                <state icon="button_checkoff" />
-                <state icon="button_checkon" />
+                <font>fullpowerfont</font>
+                <state frame="neon_off" frameoffset="3,5,6,5" textres="cast_label_fullpower" font="fullpowerofffont" tooltipres="cast_tooltip_full_power"/>
+                <state frame="neon" frameoffset="3,5,6,5" textres="cast_label_fullpower" tooltipres="cast_tooltip_full_power" />
                 <script>
                     function onValueChanged()
-                        window.fullPowerToggled(getValue());
+                    window.fullPowerToggled(getValue());
                     end
                 </script>
             </buttonfield>
-            <label name="fullpowerlabel">
-                <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
-                    <top parent="topanchor" anchor="bottom" />
-                </anchored>
-                <static textres="cast_label_fullpower" />
-            </label>
 
             <genericcontrol name="hanchor">
                 <anchored width="0" height="0">
@@ -363,6 +316,25 @@
             </windowlist>
         </sheetdata>
     </windowclass>
+
+    <framedef name="neon">
+        <bitmap file="graphics/frames/neon.png" />
+        <offset>12,12,12,12</offset>
+    </framedef>
+    <framedef name="neon_off">
+        <bitmap file="graphics/frames/neon_off.png" />
+        <offset>12,12,12,12</offset>
+    </framedef>
+    <font name="fullpowerfont">
+        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
+        <color value="#F9EC8B" />
+        <shadow offset="2,2" color="#000000" />
+    </font>
+    <font name="fullpowerofffont">
+        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
+        <color value="#D8D4B0" />
+        <shadow offset="2,2" color="#B8B470"/>
+    </font>
 
     <windowclass name="destruction_talent">
         <margins control="0,0,0,2" />
