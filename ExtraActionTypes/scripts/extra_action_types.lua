@@ -1,4 +1,4 @@
--- TODO FHEAL temp health
+-- TODO FHEAL temp health?
 -- TODO mirror image give to Aaron
 
 local oldOnSpellAction;
@@ -10,6 +10,7 @@ local oldApplyAttack;
 local oldClearCritState;
 local oldAddItemToList;
 local oldPerformAction;
+local oldGetDefenseValue;
 
 function onInit()
     -- Demoralize
@@ -61,6 +62,11 @@ function onInit()
     OptionsManager.registerOption2("COMBOHOTKEYS", true, "option_header_client", "option_label_COMBOHOTKEYS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
     Interface.onHotkeyDrop = onHotkeyDrop;
     Interface.onHotkeyActivated = onHotkey;
+
+    -- Scaling Miss Chance
+    table.insert(DataCommon.targetableeffectcomps, "MISS");
+    oldGetDefenseValue = ActorManager2.getDefenseValue;
+    ActorManager2.getDefenseValue = getMissChanceDefenseValue;
 end
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
@@ -612,4 +618,34 @@ function onHotkeyDrop(draginfo)
         draginfo.setNumberData(oldDraginfo[i][2]);
         draginfo.setStringData(oldDraginfo[i][3]);
     end
+end
+
+function getMissChanceDefenseValue(rAttacker, rDefender, rRoll)
+    local nDefense, nAttackEffectMod, nDefenseEffectMod, nMissChance = oldGetDefenseValue(rAttacker, rDefender, rRoll);
+
+    local aAttackFilter = {};
+    if sAttackType == "M" then
+        table.insert(aAttackFilter, "melee");
+    elseif sAttackType == "R" then
+        table.insert(aAttackFilter, "ranged");
+    end
+    if bOpportunity then
+        table.insert(aAttackFilter, "opportunity");
+    end
+
+    local aMissEffects = EffectManager35E.getEffectsBonusByType(rDefender, {"MISS"}, true, aAttackFilter, rAttacker);
+
+    for k,v in pairs(aMissEffects) do
+        if nMissChance == 20 then       -- stacks with fog CONC
+            nMissChance = math.max(v.mod, nMissChance) + (math.min(v.mod, nMissChance) / 2);
+        else
+            nMissChance = math.max(v.mod, nMissChance);
+        end
+    end
+
+    if nMissChance > 95 then
+        nMissChance = 95;
+    end
+
+    return nDefense, nAttackEffectMod, nDefenseEffectMod, nMissChance;
 end
