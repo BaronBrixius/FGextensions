@@ -34,8 +34,10 @@ function onMenuSelection(selection, subselection)
         getDatabaseNode().delete();
     elseif selection == 3 then
         setCastDataChangedLock(true);
+
         local nodeNewAction = getDatabaseNode().createChild("actions").createChild();
         DB.setValue(nodeNewAction, "talenttype", "string", sCategory);
+
         if subselection == 2 then
             setUpNewCast(nodeNewAction);
         elseif subselection == 3 then
@@ -54,11 +56,11 @@ function onMenuSelection(selection, subselection)
         end
 
         if sCategory == "shapes" then
-            castWindow.resetShapeActions();
+            castWindow.updateShapeActions();
         elseif sCategory == "types" then
-            castWindow.resetTypeActions();
+            castWindow.updateTypeActions();
         elseif sCategory == "other" then
-            castWindow.resetOtherActions();
+            castWindow.updateOtherActions();
         end
     end
 end
