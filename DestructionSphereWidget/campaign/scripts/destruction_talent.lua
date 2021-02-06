@@ -17,24 +17,51 @@ function toggleDetail()
 end
 
 function onMenuSelection(selection, subselection)
+    local nSelected = DB.getValue(getDatabaseNode(), ".selected");
+    local castWindow = self.windowlist.window.cast_window.subwindow;
+    local sCategory = getDatabaseNode().getPath():match("%.destruction_([^%.]+)");
+
     if selection == 6 and subselection == 7 then
+        if nSelected == 1 then
+            if sCategory == "shapes" then
+                castWindow.clearShapeSelection();
+            elseif sCategory == "types" then
+                castWindow.clearTypeSelection();
+            elseif sCategory == "other" then
+                castWindow.clearOtherSelection(getDatabaseNode().getNodeName());
+            end
+        end
         getDatabaseNode().delete();
     elseif selection == 3 then
         setCastDataChangedLock(true);
-        local nodeAction = getDatabaseNode().createChild("actions").createChild();
+
+        local nodeNewAction = getDatabaseNode().createChild("actions").createChild();
+        DB.setValue(nodeNewAction, "talenttype", "string", sCategory);
+
         if subselection == 2 then
-            setUpNewCast(nodeAction);
+            setUpNewCast(nodeNewAction);
         elseif subselection == 3 then
-            setUpNewDamage(nodeAction);
+            setUpNewDamage(nodeNewAction);
         elseif subselection == 4 then
-            setUpNewHeal(nodeAction);
+            setUpNewHeal(nodeNewAction);
         elseif subselection == 5 then
-            setUpNewEffect(nodeAction);
+            setUpNewEffect(nodeNewAction);
         end
         activatedetail.setValue(1);
 
         setCastDataChangedLock(false);
-        self.windowlist.window.cast_window.subwindow.updateCast();
+
+        if not nSelected == 1 then
+            return;
+        end
+
+        if sCategory == "shapes" then
+            castWindow.updateShapeActions();
+        elseif sCategory == "types" then
+            castWindow.updateTypeActions();
+        elseif sCategory == "other" then
+            castWindow.updateOtherActions();
+        end
     end
 end
 

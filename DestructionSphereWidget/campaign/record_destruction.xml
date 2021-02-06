@@ -3,10 +3,10 @@
     <windowclass name="destruction_window">
         <frame>recordsheet</frame>
         <placement>
-            <size width="575" height="400" />
+            <size width="560" height="400" />
         </placement>
         <sizelimits>
-            <minimum width="575" height="140" />
+            <minimum width="560" height="140" />
             <dynamic />
         </sizelimits>
         <nodelete />
@@ -22,7 +22,7 @@
                 <bounds>0,0,60,60</bounds>
                 <icon normal="destruction_sphere" pressed="destruction_sphere_shadow" empty="destruction_sphere" />
                 <class>destruction_window</class>
-                <description text="Destruction Sphere"/>
+                <description text="Destruction Sphere" />
             </windowreferencecontrol>
 
             <subwindow_record name="main">
@@ -40,16 +40,15 @@
         </sheetdata>
     </windowclass>
 
-
     <windowclass name="destruction_editor_main">
         <sheetdata>
             <anchor_column name="columnanchor" />
 
             <subwindow name="cast_window">
                 <anchored>
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left offset="10" />
-                    <right offset="-10" />
+                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="5" />
+                    <left offset="5" />
+                    <right offset="-5" />
                 </anchored>
                 <class>cast_box</class>
                 <center />
@@ -82,7 +81,7 @@
                     function setSelected(shapeSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            controller.clearNotSelectedTalents(getDatabaseNode(), shapeSelection.getDatabaseNode());
+                            controller.setShape(shapeSelection.getDatabaseNode(), selectionValue);
                         end
                     end
                 </script>
@@ -113,7 +112,7 @@
                     function setSelected(typeSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            controller.clearNotSelectedTalents(getDatabaseNode(), typeSelection.getDatabaseNode());
+                            controller.setType(typeSelection.getDatabaseNode(), selectionValue);
                         end
                     end
                 </script>
@@ -141,8 +140,11 @@
             <list_talents name="other_list">
                 <datasource>.spells.spell0.destruction_other</datasource>
                 <script>
-                    function setSelected(talentSelection)
-                    return true;
+                    function setSelected(talentSelection, selectionValue)
+                        local controller = window.cast_window.subwindow;
+                        if controller then
+                            controller.setOtherTalent(talentSelection.getDatabaseNode(), selectionValue);
+                        end
                     end
                 </script>
             </list_talents>
@@ -151,16 +153,13 @@
 
     <template name="list_talents">
         <list_text>
-<!--            <child><backcolor /></child>-->
+            <child><backcolor /></child>
             <anchored>
                 <top parent="columnanchor" anchor="bottom" relation="relative" offset="10" />
                 <left offset="5" />
                 <right offset="-5" />
             </anchored>
-            <sortby>
-                <control>name</control>
-            </sortby>
-            <newfocus>name</newfocus>
+            <sortby><field>name</field></sortby>
             <class>destruction_talent</class>
         </list_text>
     </template>
@@ -171,43 +170,11 @@
         <margins control="0,0,0,20" />
         <sheetdata>
             <genericcontrol name="topanchor">
-                <anchored position="insidetopleft" offset="30,23" />
+                <anchored position="insidetopleft" offset="25,23" />
                 <disabled />
                 <invisible />
             </genericcontrol>
 
-<!--            <button_roll name="castbutton">-->
-<!--                <script>-->
-<!--                    function action(draginfo)-->
-<!--                    local sSubRoll = nil;-->
-<!--                    if subroll then-->
-<!--                    sSubRoll = subroll[1];-->
-<!--                    end-->
-
-<!--                    window.onSpellAction(draginfo, window.getDatabaseNode(), sSubRoll);-->
-<!--                    end-->
-
-<!--                    function onButtonPress()-->
-<!--                    action();-->
-<!--                    end-->
-
-<!--                    function onDragStart(button, x, y, draginfo)-->
-<!--                    action(draginfo);-->
-<!--                    return true;-->
-<!--                    end-->
-<!--                </script>-->
-<!--                <anchored>-->
-<!--                    <left parent="topanchor" anchor="right" relation="relative" offset="23" />-->
-<!--                    <top parent="topanchor" anchor="bottom" />-->
-<!--                </anchored>-->
-<!--            </button_roll>-->
-<!--            <label name="castlabel">-->
-<!--                <anchored>-->
-<!--                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />-->
-<!--                    <top parent="topanchor" anchor="bottom" />-->
-<!--                </anchored>-->
-<!--                <static textres="spell_label_cast" />-->
-<!--            </label>-->
             <icon_usepower name="usepower">
                 <anchored width="15" height="15">
                     <left parent="topanchor" anchor="right" relation="relative" offset="20" />
@@ -223,25 +190,19 @@
                 <frame name="fieldlight" offset="7,5,7,5" />
             </simplenumber>
             <buttonfield name="fullpower" source=".fullpower">
-                <anchored width="12" height="12">
-                    <top parent="topanchor" anchor="bottom" offset="3" />
-                    <left parent="topanchor" anchor="right" relation="relative" offset="15" />
+                <anchored width="107" height="25">
+                    <top parent="topanchor" anchor="bottom" offset="-4" />
+                    <left parent="topanchor" anchor="right" relation="relative" offset="18" />
                 </anchored>
-                <state icon="button_checkoff" />
-                <state icon="button_checkon" />
+                <font>fullpowerfont</font>
+                <state frame="neon_off" frameoffset="3,5,6,5" textres="cast_label_fullpower" font="fullpowerofffont" tooltipres="cast_tooltip_full_power"/>
+                <state frame="neon" frameoffset="3,5,6,5" textres="cast_label_fullpower" tooltipres="cast_tooltip_full_power" />
                 <script>
                     function onValueChanged()
-                        window.updateCast();
+                    window.fullPowerToggled(getValue());
                     end
                 </script>
             </buttonfield>
-            <label name="fullpowerlabel">
-                <anchored>
-                    <left parent="topanchor" anchor="right" relation="relative" offset="3" />
-                    <top parent="topanchor" anchor="bottom" />
-                </anchored>
-                <static textres="cast_label_fullpower" />
-            </label>
 
             <genericcontrol name="hanchor">
                 <anchored width="0" height="0">
@@ -327,12 +288,53 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <!-- dummy nodes to fix relative references -->
+                <script>
+                    function onSortCompare(w1, w2)
+                        local node1 = w1.getDatabaseNode();
+                        local node2 = w2.getDatabaseNode();
+
+                        local sType1 = DB.getValue(node1, "talenttype");
+                        local sType2 = DB.getValue(node2, "talenttype");
+
+                        if sType1 == sType2 then
+                            return node2.getNodeName() > node1.getNodeName();
+                        end;
+
+                        if sType1 == "other" then
+                            sType1 = "zOther"
+                        end;
+
+                        if sType2 == "other" then
+                            sType2 = "zOther"
+                        end;
+
+                        return sType1 > sType2;
+                    end
+                </script>
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action</class>
             </windowlist>
         </sheetdata>
     </windowclass>
+
+    <framedef name="neon">
+        <bitmap file="graphics/frames/neon.png" />
+        <offset>12,12,12,12</offset>
+    </framedef>
+    <framedef name="neon_off">
+        <bitmap file="graphics/frames/neon_off.png" />
+        <offset>12,12,12,12</offset>
+    </framedef>
+    <font name="fullpowerfont">
+        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
+        <color value="#F9EC8B" />
+        <shadow offset="2,2" color="#000000" />
+    </font>
+    <font name="fullpowerofffont">
+        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
+        <color value="#D8D4B0" />
+        <shadow offset="2,2" color="#B8B470"/>
+    </font>
 
     <windowclass name="destruction_talent">
         <margins control="0,0,0,2" />
@@ -399,13 +401,18 @@
                 <state icon="button_checkon" />
                 <script>
                     function onValueChanged()
-                        if getValue() == 1 then
-                            window.parentcontrol.window.windowlist.setSelected(window);
-                        end
+                        window.parentcontrol.window.windowlist.setSelected(window, getValue());
                     end
                 </script>
             </buttonfield>
             <basicnumber name="costdisplay" source="cost">
+                <script>
+                    function onValueChanged()
+                        if window.selectspell.getValue() == 1 then
+                            window.parentcontrol.window.windowlist.window.cast_window.subwindow.updatePPCost();
+                        end
+                    end
+                </script>
                 <anchored width="20" height="20">
                     <top offset="2" />
                     <left parent="hanchor" anchor="right" relation="relative" offset="5" />
@@ -459,7 +466,7 @@
                 <anchored to="frame_stat" position="insidetopright" offset="-75,0" />
                 <class>destruction_window</class>
                 <invisible />
-                <disabled/>
+                <disabled />
             </windowreferencecontrol>
         </sheetdata>
     </windowclass>
