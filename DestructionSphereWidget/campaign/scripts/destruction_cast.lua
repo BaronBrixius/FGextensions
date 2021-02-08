@@ -157,7 +157,7 @@ function getTotalPPCost()
 end
 
 function updateShapeActions()
-    if bDataChangedLock then
+    if bDataChangedLock then --or User.isHost()
         return ;
     end
     setDataChangedLock(true);
@@ -173,8 +173,10 @@ function updateShapeActions()
         return ;
     end
 
-    for _, v in pairs(nodeShape.getChild("actions").getChildren()) do
-        local nodeNewAction = copyActionToCast(nodeCastActionsList, v);
+    for _, action in pairs(nodeShape.getChild("actions").getChildren()) do
+        local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
+        DB.setValue(nodeNewAction, "order", "number", tonumber(action.getNodeName():sub(-5)));
+
         if DB.getValue(nodeNewAction, "type") == "cast" then
             DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
         end
@@ -184,7 +186,7 @@ function updateShapeActions()
 end
 
 function updateTypeActions()
-    if bDataChangedLock then
+    if bDataChangedLock then --or User.isHost()
         return ;
     end
     setDataChangedLock(true);
@@ -202,8 +204,11 @@ function updateTypeActions()
         return ;
     end
 
+
     for _, action in pairs(nodeType.getChild("actions").getChildren()) do
         local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
+        DB.setValue(nodeNewAction, "order", "number", tonumber(action.getNodeName():sub(-5)));
+
         if bFullPower and DB.getValue(nodeNewAction, "type") == "damage" then
             for _, dmgEntry in pairs(nodeNewAction.getChild("damagelist").getChildren()) do
                 if DB.getValue(dmgEntry, "dicestat") == "oddcl" then
@@ -217,18 +222,21 @@ function updateTypeActions()
 end
 
 function updateOtherActions()
-    if bDataChangedLock then
+    if bDataChangedLock then --or User.isHost()
         return ;
     end
     setDataChangedLock(true);
 
     local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "other");
+    deleteActionsInCategory(nodeCastActionsList, "zOther");
 
+    local nOrder = 0;
     for _, talent in pairs(aOtherTalents) do
         for _, action in pairs(talent.getChild("actions").getChildren()) do
-            copyActionToCast(nodeCastActionsList, action);
+            local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
+            DB.setValue(nodeNewAction, "order", "number", nOrder + tonumber(action.getNodeName():sub(-5)));
         end
+        nOrder = nOrder + 100000;
     end
 
     setDataChangedLock(false);
@@ -268,7 +276,7 @@ function createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist)
     DB.setValue(nodeNewAction, "atktype", "string", "rtouch");
     DB.setValue(nodeNewAction, "talenttype", "string", "shapes");
 
-    DB.setValue(nodeAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
+    DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
 end
 
 function createBasicDamageAction(nodeCastActionsList, bFullPower)

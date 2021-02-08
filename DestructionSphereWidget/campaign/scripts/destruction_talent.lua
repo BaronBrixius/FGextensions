@@ -36,7 +36,11 @@ function onMenuSelection(selection, subselection)
         setCastDataChangedLock(true);
 
         local nodeNewAction = getDatabaseNode().createChild("actions").createChild();
-        DB.setValue(nodeNewAction, "talenttype", "string", sCategory);
+        if sCategory == "other" then
+            DB.setValue(nodeNewAction, "talenttype", "string", "zOther");
+        else
+            DB.setValue(nodeNewAction, "talenttype", "string", sCategory);
+        end
 
         if subselection == 2 then
             setUpNewCast(nodeNewAction);

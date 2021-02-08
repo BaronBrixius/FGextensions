@@ -1,5 +1,4 @@
 -- TODO FHEAL temp health?
--- TODO mirror image give to Aaron
 
 local oldOnSpellAction;
 local oldGetActionAttackText;

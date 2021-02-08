@@ -288,29 +288,10 @@
                     <right />
                 </anchored>
                 <noscroll />
-                <script>
-                    function onSortCompare(w1, w2)
-                        local node1 = w1.getDatabaseNode();
-                        local node2 = w2.getDatabaseNode();
-
-                        local sType1 = DB.getValue(node1, "talenttype");
-                        local sType2 = DB.getValue(node2, "talenttype");
-
-                        if sType1 == sType2 then
-                            return node2.getNodeName() > node1.getNodeName();
-                        end;
-
-                        if sType1 == "other" then
-                            sType1 = "zOther"
-                        end;
-
-                        if sType2 == "other" then
-                            sType2 = "zOther"
-                        end;
-
-                        return sType1 > sType2;
-                    end
-                </script>
+                <sortby>
+                    <field>talenttype</field>
+                    <field>order</field>
+                </sortby>
                 <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
                 <class>spell_action</class>
             </windowlist>
