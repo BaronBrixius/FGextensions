@@ -54,8 +54,16 @@ function setDataChangedLock(bNewValue)
     bDataChangedLock = bNewValue;
 end
 
-function setShape(nodeTalent, nSelectionValue)
+function dataChangeIsLocked()
     if bDataChangedLock then
+        return true;
+    end
+
+    return User.isHost() and #parentcontrol.window.parentcontrol.window.getViewers() > 0;
+end
+
+function setShape(nodeTalent, nSelectionValue)
+    if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
@@ -82,7 +90,7 @@ function clearShapeSelection()
 end
 
 function setType(nodeTalent, nSelectionValue)
-    if bDataChangedLock then
+    if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
@@ -109,7 +117,7 @@ function clearTypeSelection()
 end
 
 function setOtherTalent(nodeTalent, nSelectionValue)
-    if bDataChangedLock then
+    if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
@@ -157,7 +165,7 @@ function getTotalPPCost()
 end
 
 function updateShapeActions()
-    if bDataChangedLock then --or User.isHost()
+    if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
@@ -186,7 +194,7 @@ function updateShapeActions()
 end
 
 function updateTypeActions()
-    if bDataChangedLock then --or User.isHost()
+    if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
@@ -222,7 +230,7 @@ function updateTypeActions()
 end
 
 function updateOtherActions()
-    if bDataChangedLock then --or User.isHost()
+    if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
