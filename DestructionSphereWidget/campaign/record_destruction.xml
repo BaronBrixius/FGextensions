@@ -143,7 +143,7 @@
                     function setSelected(talentSelection, selectionValue)
                         local controller = window.cast_window.subwindow;
                         if controller then
-                            controller.setOtherTalent(talentSelection.getDatabaseNode(), selectionValue);
+                            controller.setOtherTalent();
                         end
                     end
                 </script>
@@ -261,14 +261,14 @@
             <basicnumber name="cl">
                 <anchored width="20" height="20">
                     <top parent="hanchor" anchor="bottom" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-10" />
+                    <right parent="hanchor" anchor="left" relation="relative" />
                 </anchored>
                 <min>1</min>
                 <tooltip textres="casterlevel" />
                 <tabtarget next="points" />
                 <script>
                     function onValueChanged()
-                        window.updateAllActionValues();
+                        window.updateActionValues();
                     end
                 </script>
             </basicnumber>
@@ -281,41 +281,67 @@
                 <tooltip textres="casterlevel" />
             </label>
 
-            <windowlist name="destruction_actions">
+            <list_casttalents name="destruction_shapes">
                 <anchored>
                     <top parent="topanchor" anchor="bottom" relation="relative" offset="10" />
                     <left parent="topanchor" anchor="left" />
                     <right />
                 </anchored>
+                <datasource>.spells.spell0.destruction_shapes</datasource>
+            </list_casttalents>
+            <list_casttalents name="destruction_types">
+                <anchored>
+                    <top parent="topanchor" anchor="bottom" relation="relative" />
+                    <left parent="topanchor" anchor="left" />
+                    <right />
+                </anchored>
+                <datasource>.spells.spell0.destruction_types</datasource>
+            </list_casttalents>
+            <list_casttalents name="destruction_other">
+                <anchored>
+                    <top parent="topanchor" anchor="bottom" relation="relative" />
+                    <left parent="topanchor" anchor="left" />
+                    <right />
+                </anchored>
+                <datasource>.spells.spell0.destruction_other</datasource>
+            </list_casttalents>
+        </sheetdata>
+    </windowclass>
+
+    <template name="list_casttalents">
+        <list_text>
+            <child><backcolor /></child>
+            <noscroll />
+            <sortby><field>name</field></sortby>
+            <class>cast_talent</class>
+        </list_text>
+    </template>
+
+    <windowclass name="cast_talent">
+        <script>
+            function onInit()
+                setSelected(DB.getValue(getDatabaseNode(), ".selected", 0) == 1)
+            end
+
+            function setSelected(bSelected)
+                DB.setValue(getDatabaseNode(), ".selected", "number", bSelected and 1 or 0);
+                actions.setVisible(bSelected);
+                actions.setEnabled(bSelected);
+            end
+        </script>
+        <sheetdata>
+            <windowlist name="actions">
+                <anchored>
+                    <top />
+                    <left />
+                    <right />
+                </anchored>
                 <noscroll />
-                <sortby>
-                    <field>talenttype</field>
-                    <field>order</field>
-                </sortby>
-                <datasource>.level.level0.spell.spell0.destruction_actions</datasource>
+                <datasource>.actions</datasource>
                 <class>spell_action</class>
             </windowlist>
         </sheetdata>
     </windowclass>
-
-    <framedef name="neon">
-        <bitmap file="graphics/frames/neon.png" />
-        <offset>12,12,12,12</offset>
-    </framedef>
-    <framedef name="neon_off">
-        <bitmap file="graphics/frames/neon_off.png" />
-        <offset>12,12,12,12</offset>
-    </framedef>
-    <font name="fullpowerfont">
-        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
-        <color value="#F9EC8B" />
-        <shadow offset="2,2" color="#000000" />
-    </font>
-    <font name="fullpowerofffont">
-        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
-        <color value="#D8D4B0" />
-        <shadow offset="2,2" color="#B8B470"/>
-    </font>
 
     <windowclass name="destruction_talent">
         <margins control="0,0,0,2" />
@@ -451,4 +477,23 @@
             </windowreferencecontrol>
         </sheetdata>
     </windowclass>
+
+    <framedef name="neon">
+        <bitmap file="graphics/frames/neon.png" />
+        <offset>12,12,12,12</offset>
+    </framedef>
+    <framedef name="neon_off">
+        <bitmap file="graphics/frames/neon_off.png" />
+        <offset>12,12,12,12</offset>
+    </framedef>
+    <font name="fullpowerfont">
+        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
+        <color value="#F9EC8B" />
+        <shadow offset="2,2" color="#000000" />
+    </font>
+    <font name="fullpowerofffont">
+        <ttf file="graphics/fonts/AlegreyaSansSC-Bold.ttf" name="Alegreya Sans SC Bold" size="24" />
+        <color value="#D8D4B0" />
+        <shadow offset="2,2" color="#B8B470"/>
+    </font>
 </root>

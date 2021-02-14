@@ -1,53 +1,15 @@
-local nodeShape;
-local nodeType;
-local aOtherTalents = { };
 local bDataChangedLock = false;
 
 function onInit()
     local nodeCastBox = getDatabaseNode();
-    DB.addHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
-    DB.addHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
-
-    if not nodeShape then
-        nodeShape = getSelection("shapes");
-    end
-    if nodeShape then
-        DB.addHandler(DB.getPath(nodeShape.getChild("actions")), 'onChildUpdate', updateShapeActions)
-    end
-
-    if not nodeType then
-        nodeType = getSelection("types");
-    end
-    if nodeType then
-        DB.addHandler(DB.getPath(nodeType.getChild("actions")), 'onChildUpdate', updateTypeActions)
-    end
-
-    aOtherTalents = { };
-    for _, talent in pairs(getDatabaseNode().getChild("spells.spell0.destruction_other").getChildren()) do
-        if DB.getValue(talent, ".selected", 0) == 1 then
-            aOtherTalents[talent.getNodeName()] = talent;
-            DB.addHandler(DB.getPath(talent.getChild("actions")), 'onChildUpdate', updateOtherActions)
-        end
-    end
-
-    updateShapeActions()
-    updateTypeActions()
-    updateOtherActions()
+    DB.addHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateActionValues);
+    DB.addHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateActionValues);
 end
 
 function onClose()
     local nodeCastBox = getDatabaseNode();
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
-end
-
-function getSelection(sCategory)
-    for _, v in pairs(getDatabaseNode().getChild("spells.spell0.destruction_" .. sCategory).getChildren()) do
-        if DB.getValue(v, ".selected", 0) == 1 then
-            return v;
-        end
-    end
-    return nil;
+    DB.removeHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateActionValues);
+    DB.removeHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateActionValues);
 end
 
 function setDataChangedLock(bNewValue)
@@ -68,25 +30,12 @@ function setShape(nodeTalent, nSelectionValue)
     end
     setDataChangedLock(true);
 
-    clearShapeSelection();
-    if nSelectionValue == 1 then
-        nodeShape = nodeTalent;
-        DB.addHandler(DB.getPath(nodeShape.getChild("actions")), 'onChildUpdate', updateShapeActions)
+    for _, window in pairs(destruction_shapes.getWindows()) do
+        window.setSelected(window.getDatabaseNode() == nodeTalent and nSelectionValue == 1);
     end
 
-    setDataChangedLock(false);
-    updateShapeActions();
     updatePPCost();
-end
-
-function clearShapeSelection()
-    if not nodeShape then
-        return ;
-    end
-
-    DB.removeHandler(DB.getPath(nodeShape.getChild("actions")), 'onChildUpdate', updateShapeActions)
-    DB.setValue(nodeShape, ".selected", "number", 0);
-    nodeShape = nil;
+    setDataChangedLock(false);
 end
 
 function setType(nodeTalent, nSelectionValue)
@@ -95,66 +44,57 @@ function setType(nodeTalent, nSelectionValue)
     end
     setDataChangedLock(true);
 
-    clearTypeSelection();
-    if nSelectionValue == 1 then
-        nodeType = nodeTalent;
-        DB.addHandler(DB.getPath(nodeType.getChild("actions")), 'onChildUpdate', updateTypeActions)
+    for _, window in pairs(destruction_types.getWindows()) do
+        window.setSelected(window.getDatabaseNode() == nodeTalent and nSelectionValue == 1);
     end
 
-    setDataChangedLock(false);
-    updateTypeActions();
+    setShapeSpellResistProperty(getSpellResistPropertyFromType())
     updatePPCost();
+    setDataChangedLock(false);
 end
 
-function clearTypeSelection()
-    if not nodeType then
-        return ;
-    end
-
-    DB.removeHandler(DB.getPath(nodeType.getChild("actions")), 'onChildUpdate', updateTypeActions)
-    DB.setValue(nodeType, ".selected", "number", 0);
-    nodeType = nil;
-end
-
-function setOtherTalent(nodeTalent, nSelectionValue)
+function setOtherTalent()
     if dataChangeIsLocked() then
         return ;
     end
     setDataChangedLock(true);
 
-    local sName = nodeTalent.getNodeName();
-    if nSelectionValue == 0 then
-        clearOtherSelection(sName)
-    else
-        aOtherTalents[sName] = nodeTalent;
-        DB.addHandler(DB.getPath(aOtherTalents[sName].getChild("actions")), 'onChildUpdate', updateOtherActions)
+    for _, window in pairs(destruction_other.getWindows()) do
+        window.setSelected(DB.getValue(window.getDatabaseNode(), ".selected", 0) == 1)
     end
 
-    setDataChangedLock(false);
-    updateOtherActions();
     updatePPCost();
-end
-
-function clearOtherSelection(sName)
-    if not aOtherTalents[sName] then
-        return ;
-    end
-
-    DB.removeHandler(DB.getPath(aOtherTalents[sName].getChild("actions")), 'onChildUpdate', updateOtherActions)
-    DB.setValue(aOtherTalents[sName], ".selected", "number", 0);
-    aOtherTalents[sName] = nil;
+    setDataChangedLock(false);
 end
 
 function updatePPCost()
-    DB.setValue(getDatabaseNode(), "cast.cost", "number", getTotalPPCost(nodeShape, nodeType, aOtherTalents));
+    DB.setValue(getDatabaseNode(), "cast.cost", "number", getTotalPPCost());
 end
 
 function getTotalPPCost()
-    local nCost = DB.getValue(nodeShape, "cost", 0)
-            + DB.getValue(nodeType, "cost", 0);
+    local nCost = 0;
 
-    for _, talent in pairs(aOtherTalents) do
-        nCost = nCost + DB.getValue(talent, "cost", 0);
+    for _, window in pairs(destruction_shapes.getWindows()) do
+        local nodeTalent = window.getDatabaseNode();
+        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
+            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
+            break;
+        end
+    end
+
+    for _, window in pairs(destruction_types.getWindows()) do
+        local nodeTalent = window.getDatabaseNode();
+        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
+            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
+            break;
+        end
+    end
+
+    for _, window in pairs(destruction_other.getWindows()) do
+        local nodeTalent = window.getDatabaseNode();
+        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
+            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
+        end
     end
 
     if DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1 then
@@ -164,176 +104,88 @@ function getTotalPPCost()
     return math.max(nCost, 0);
 end
 
-function updateShapeActions()
-    if dataChangeIsLocked() then
-        return ;
-    end
-    setDataChangedLock(true);
-
-    local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "shapes");
-
-    local bIgnoreSpellResist = getSpellResistPropertyFromType();
-
-    if not nodeShape then
-        createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist);
-        setDataChangedLock(false);
-        return ;
-    end
-
-    for _, action in pairs(nodeShape.getChild("actions").getChildren()) do
-        local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
-        DB.setValue(nodeNewAction, "order", "number", tonumber(action.getNodeName():sub(-5)));
-
-        if DB.getValue(nodeNewAction, "type") == "cast" then
-            DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
-        end
-    end
-
-    setDataChangedLock(false);
-end
-
-function updateTypeActions()
-    if dataChangeIsLocked() then
-        return ;
-    end
-    setDataChangedLock(true);
-
-    local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "types");
-
-    local bFullPower = DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1;
-
-    setShapeSpellResistProperty(nodeCastActionsList, getSpellResistPropertyFromType());
-
-    if not nodeType then
-        createBasicDamageAction(nodeCastActionsList, bFullPower);
-        setDataChangedLock(false);
-        return ;
-    end
-
-
-    for _, action in pairs(nodeType.getChild("actions").getChildren()) do
-        local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
-        DB.setValue(nodeNewAction, "order", "number", tonumber(action.getNodeName():sub(-5)));
-
-        if bFullPower and DB.getValue(nodeNewAction, "type") == "damage" then
-            for _, dmgEntry in pairs(nodeNewAction.getChild("damagelist").getChildren()) do
-                if DB.getValue(dmgEntry, "dicestat") == "oddcl" then
-                    DB.setValue(dmgEntry, "dicestat", "string", "cl");
-                end
-            end
-        end
-    end
-
-    setDataChangedLock(false);
-end
-
-function updateOtherActions()
-    if dataChangeIsLocked() then
-        return ;
-    end
-    setDataChangedLock(true);
-
-    local nodeCastActionsList = getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions");
-    deleteActionsInCategory(nodeCastActionsList, "zOther");
-
-    local nOrder = 0;
-    for _, talent in pairs(aOtherTalents) do
-        for _, action in pairs(talent.getChild("actions").getChildren()) do
-            local nodeNewAction = copyActionToCast(nodeCastActionsList, action);
-            DB.setValue(nodeNewAction, "order", "number", nOrder + tonumber(action.getNodeName():sub(-5)));
-        end
-        nOrder = nOrder + 100000;
-    end
-
-    setDataChangedLock(false);
-end
-
-function copyTalentActionsToCast(nodeCastActionsList, nodeTalent)
-    local aTalentActions = nodeTalent.getChild("actions").getChildren();
-
-    local aKeys = { };
-    for k in pairs(aTalentActions) do
-        table.insert(aKeys, k);
-    end
-    table.sort(aKeys);
-
-    for _, k in ipairs(aKeys) do
-        copyActionToCast(nodeCastActionsList, aTalentActions[k]);
-    end
-end
-
-function copyActionToCast(nodeCastActionsList, nodeAction)
-    local nodeNewAction = nodeCastActionsList.createChild();
-    DB.copyNode(nodeAction, nodeNewAction);
-    return nodeNewAction;
-end
-
-function deleteActionsInCategory(nodeCastActionsList, sCategory)
-    for _, v in pairs(nodeCastActionsList.getChildren()) do
-        if DB.getValue(v, "talenttype") == sCategory then
-            DB.deleteNode(v);
-        end
-    end
-end
-
-function createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist)
-    local nodeNewAction = nodeCastActionsList.createChild();
-    DB.setValue(nodeNewAction, "type", "string", "cast");
-    DB.setValue(nodeNewAction, "atktype", "string", "rtouch");
-    DB.setValue(nodeNewAction, "talenttype", "string", "shapes");
-
-    DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
-end
-
-function createBasicDamageAction(nodeCastActionsList, bFullPower)
-    local nodeNewAction = nodeCastActionsList.createChild();
-    DB.setValue(nodeNewAction, "type", "string", "damage");
-    DB.setValue(nodeNewAction, "talenttype", "string", "types");
-
-    local nodeDmgEntry = nodeNewAction.createChild("damagelist").createChild();
-    DB.setValue(nodeDmgEntry, "dice", "dice", { "d6" });
-    DB.setValue(nodeDmgEntry, "type", "string", "bludgeoning");
-    DB.setValue(nodeDmgEntry, "dicestat", "string", bFullPower and "cl" or "oddcl");
-end
+--function createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist)
+--    local nodeNewAction = nodeCastActionsList.createChild();
+--    DB.setValue(nodeNewAction, "type", "string", "cast");
+--    DB.setValue(nodeNewAction, "atktype", "string", "rtouch");
+--    DB.setValue(nodeNewAction, "talenttype", "string", "shapes");
+--
+--    DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
+--end
+--
+--function createBasicDamageAction(nodeCastActionsList, bFullPower)
+--    local nodeNewAction = nodeCastActionsList.createChild();
+--    DB.setValue(nodeNewAction, "type", "string", "damage");
+--    DB.setValue(nodeNewAction, "talenttype", "string", "types");
+--
+--    local nodeDmgEntry = nodeNewAction.createChild("damagelist").createChild();
+--    DB.setValue(nodeDmgEntry, "dice", "dice", { "d6" });
+--    DB.setValue(nodeDmgEntry, "type", "string", "bludgeoning");
+--    DB.setValue(nodeDmgEntry, "dicestat", "string", bFullPower and "cl" or "oddcl");
+--end
 
 function getSpellResistPropertyFromType()
-    if not nodeType then
-        return false;
-    end
-
-    for _, typeAction in pairs(nodeType.getChild("actions").getChildren()) do
-        if DB.getValue(typeAction, "type") == "damage" and DB.getValue(typeAction, "dmgnotspell", 0) == 1 then
-            return true;
+    for _, window in pairs(destruction_types.getWindows()) do
+        local nodeTalent = window.getDatabaseNode();
+        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
+            for _, typeAction in pairs(nodeTalent.getChild("actions").getChildren()) do
+                if DB.getValue(typeAction, "type") == "damage" and DB.getValue(typeAction, "dmgnotspell", 0) == 1 then
+                    return true;
+                end
+            end
         end
     end
 
     return false;
 end
 
-function setShapeSpellResistProperty(nodeCastActionsList, bIgnoreSpellResist)
-    for _, nodeAction in pairs(nodeCastActionsList.getChildren()) do
-        if DB.getValue(nodeAction, "talenttype") == "shapes" and DB.getValue(nodeAction, "type") == "cast" then
-            DB.setValue(nodeAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
+function setShapeSpellResistProperty(bIgnoreSpellResist)
+    for _, nodeTalent in pairs(destruction_shapes.getDatabaseNode().getChildren()) do
+        for _, nodeAction in pairs(nodeTalent.getChild("actions").getChildren()) do
+            if DB.getValue(nodeAction, "type") == "cast" then
+                DB.setValue(nodeAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
+                break;  --only applies to first cast in a shape, since extra effects shouldn't need to reroll SR
+            end
         end
     end
 end
 
 function fullPowerToggled(nSelectionValue)
     updatePPCost();
-    setFullPowerProperty(getDatabaseNode().createChild("level.level0.spell.spell0.destruction_actions") , nSelectionValue == 1)
+    setFullPowerProperty(nSelectionValue == 1)
 end
 
-function setFullPowerProperty(nodeCastActionsList, bFullPower)
-    for _, nodeAction in pairs(nodeCastActionsList.getChildren()) do
-        if DB.getValue(nodeAction, "talenttype") == "types" and DB.getValue(nodeAction, "type") == "damage" then
-            for _, dmgEntry in pairs(nodeAction.getChild("damagelist").getChildren()) do
-                local diceStat = DB.getValue(dmgEntry, "dicestat");
-                if diceStat == "oddcl" or diceStat == "cl" then
-                    DB.setValue(dmgEntry, "dicestat", "string", bFullPower and "cl" or "oddcl");
+function setFullPowerProperty(bFullPower)
+    for _, nodeTalent in pairs(destruction_types.getDatabaseNode().getChildren()) do
+        for _, nodeAction in pairs(nodeTalent.getChild("actions").getChildren()) do
+            if DB.getValue(nodeAction, "type") == "damage" then
+                for _, dmgEntry in pairs(nodeAction.getChild("damagelist").getChildren()) do
+                    local diceStat = DB.getValue(dmgEntry, "dicestat");
+                    if diceStat == "oddcl" or diceStat == "cl" then
+                        DB.setValue(dmgEntry, "dicestat", "string", bFullPower and "cl" or "oddcl");
+                    end
                 end
             end
+        end
+    end
+end
+
+function updateActionValues()
+    for _, windowList in pairs(destruction_shapes.getWindows()) do
+        for _, window in pairs(windowList.actions.getWindows()) do
+            window.updateViews();
+        end
+    end
+
+    for _, windowList in pairs(destruction_types.getWindows()) do
+        for _, window in pairs(windowList.actions.getWindows()) do
+            window.updateViews();
+        end
+    end
+
+    for _, windowList in pairs(destruction_other.getWindows()) do
+        for _, window in pairs(windowList.actions.getWindows()) do
+            window.updateViews();
         end
     end
 end
@@ -364,33 +216,3 @@ function usePower()
     ChatManager.Message(sMessage, ActorManager.isPC(rActor), rActor);
 end
 
-function updateAllActionValues()
-    updateTalentActionValues();
-    updateCastActionValues();
-end
-
-function updateCastActionValues()
-    for _, w in pairs(destruction_actions.getWindows()) do
-        w.updateViews();
-    end
-end
-
-function updateTalentActionValues()
-    for _, wl in pairs(parentcontrol.window.shape_list.getWindows()) do
-        for _, w in pairs(wl.actions.getWindows()) do
-            w.updateViews();
-        end
-    end
-
-    for _, wl in pairs(parentcontrol.window.type_list.getWindows()) do
-        for _, w in pairs(wl.actions.getWindows()) do
-            w.updateViews();
-        end
-    end
-
-    for _, wl in pairs(parentcontrol.window.other_list.getWindows()) do
-        for _, w in pairs(wl.actions.getWindows()) do
-            w.updateViews();
-        end
-    end
-end

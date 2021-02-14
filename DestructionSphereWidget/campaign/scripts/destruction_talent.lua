@@ -17,31 +17,10 @@ function toggleDetail()
 end
 
 function onMenuSelection(selection, subselection)
-    local nSelected = DB.getValue(getDatabaseNode(), ".selected");
-    local castWindow = self.windowlist.window.cast_window.subwindow;
-    local sCategory = getDatabaseNode().getPath():match("%.destruction_([^%.]+)");
-
     if selection == 6 and subselection == 7 then
-        if nSelected == 1 then
-            if sCategory == "shapes" then
-                castWindow.clearShapeSelection();
-            elseif sCategory == "types" then
-                castWindow.clearTypeSelection();
-            elseif sCategory == "other" then
-                castWindow.clearOtherSelection(getDatabaseNode().getNodeName());
-            end
-        end
         getDatabaseNode().delete();
     elseif selection == 3 then
-        setCastDataChangedLock(true);
-
         local nodeNewAction = getDatabaseNode().createChild("actions").createChild();
-        if sCategory == "other" then
-            DB.setValue(nodeNewAction, "talenttype", "string", "zOther");
-        else
-            DB.setValue(nodeNewAction, "talenttype", "string", sCategory);
-        end
-
         if subselection == 2 then
             setUpNewCast(nodeNewAction);
         elseif subselection == 3 then
@@ -52,25 +31,7 @@ function onMenuSelection(selection, subselection)
             setUpNewEffect(nodeNewAction);
         end
         activatedetail.setValue(1);
-
-        setCastDataChangedLock(false);
-
-        if not nSelected == 1 then
-            return;
-        end
-
-        if sCategory == "shapes" then
-            castWindow.updateShapeActions();
-        elseif sCategory == "types" then
-            castWindow.updateTypeActions();
-        elseif sCategory == "other" then
-            castWindow.updateOtherActions();
-        end
     end
-end
-
-function setCastDataChangedLock(bDataChangedLock)
-    self.windowlist.window.cast_window.subwindow.setDataChangedLock(bDataChangedLock);
 end
 
 function setUpNewCast(nodeAction)
