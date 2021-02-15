@@ -3,23 +3,31 @@
     <windowclass name="destruction_window">
         <frame>recordsheet</frame>
         <placement>
-            <size width="560" height="400" />
+            <size width="522" height="400" />
         </placement>
         <sizelimits>
-            <minimum width="560" height="140" />
+            <minimum width="522" height="105" />
             <dynamic />
         </sizelimits>
         <nodelete />
-        <tooltip control="name" />
         <sheetdata>
             <windowtitlebar name="title">
                 <resource>power_header_destruction</resource>
+                <frame merge="join" offset="70,0,50,0" />
             </windowtitlebar>
 
-            <frame_record_editor name="contentframe" />
+            <genericcontrol name="contentframe">
+                <anchored>
+                    <top parent="title" anchor="bottom"/>
+                    <left offset="15" />
+                    <right offset="-15" />
+                    <bottom offset="-12" />
+                </anchored>
+                <disabled />
+            </genericcontrol>
 
             <windowreferencecontrol>
-                <bounds>0,0,60,60</bounds>
+                <bounds>7,0,40,40</bounds>
                 <icon normal="destruction_sphere" pressed="destruction_sphere_shadow" empty="destruction_sphere" />
                 <class>destruction_window</class>
                 <description text="Destruction Sphere" />
@@ -46,12 +54,11 @@
 
             <subwindow name="cast_window">
                 <anchored>
-                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="5" />
+                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="3" />
                     <left offset="5" />
                     <right offset="-5" />
                 </anchored>
                 <class>cast_box</class>
-                <center />
                 <activate />
                 <fastinit />
             </subwindow>
@@ -79,10 +86,7 @@
                 <datasource>.spells.spell0.destruction_shapes</datasource>
                 <script>
                     function setSelected(shapeSelection, selectionValue)
-                        local controller = window.cast_window.subwindow;
-                        if controller then
-                            controller.setShape(shapeSelection.getDatabaseNode(), selectionValue);
-                        end
+                        window.cast_window.subwindow.setShape(shapeSelection.getDatabaseNode(), selectionValue == 1);
                     end
                 </script>
             </list_talents>
@@ -92,7 +96,7 @@
                 <static textres="destruction_header_type" />
                 <script>
                     function onClickDown(button, x, y)
-                    return true;
+                        return true;
                     end
 
                     function onClickRelease(button, x, y)
@@ -110,10 +114,7 @@
                 <datasource>.spells.spell0.destruction_types</datasource>
                 <script>
                     function setSelected(typeSelection, selectionValue)
-                        local controller = window.cast_window.subwindow;
-                        if controller then
-                            controller.setType(typeSelection.getDatabaseNode(), selectionValue);
-                        end
+                        window.cast_window.subwindow.setType(typeSelection.getDatabaseNode(), selectionValue == 1);
                     end
                 </script>
             </list_talents>
@@ -141,10 +142,7 @@
                 <datasource>.spells.spell0.destruction_other</datasource>
                 <script>
                     function setSelected(talentSelection, selectionValue)
-                        local controller = window.cast_window.subwindow;
-                        if controller then
-                            controller.setOtherTalent();
-                        end
+                        window.cast_window.subwindow.setOtherTalent();
                     end
                 </script>
             </list_talents>
@@ -191,7 +189,7 @@
             </simplenumber>
             <buttonfield name="fullpower" source=".fullpower">
                 <anchored width="107" height="25">
-                    <top parent="topanchor" anchor="bottom" offset="-4" />
+                    <top parent="topanchor" anchor="bottom" offset="-3" />
                     <left parent="topanchor" anchor="right" relation="relative" offset="18" />
                 </anchored>
                 <font>fullpowerfont</font>
@@ -239,7 +237,7 @@
             <label name="label_points">
                 <anchored>
                     <top parent="hanchor" anchor="bottom" />
-                    <right parent="hanchor" anchor="left" relation="relative" offset="-5" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-6" />
                 </anchored>
                 <static textres="spell_label_pp" />
             </label>
@@ -261,14 +259,14 @@
             <basicnumber name="cl">
                 <anchored width="20" height="20">
                     <top parent="hanchor" anchor="bottom" />
-                    <right parent="hanchor" anchor="left" relation="relative" />
+                    <right parent="hanchor" anchor="left" relation="relative" offset="-6" />
                 </anchored>
                 <min>1</min>
                 <tooltip textres="casterlevel" />
                 <tabtarget next="points" />
                 <script>
                     function onValueChanged()
-                        window.updateActionValues();
+                        window.updateAllActionValues();
                     end
                 </script>
             </basicnumber>
@@ -283,26 +281,14 @@
 
             <list_casttalents name="destruction_shapes">
                 <anchored>
-                    <top parent="topanchor" anchor="bottom" relation="relative" offset="10" />
-                    <left parent="topanchor" anchor="left" />
-                    <right />
+                    <top merge="join" offset="10" />
                 </anchored>
                 <datasource>.spells.spell0.destruction_shapes</datasource>
             </list_casttalents>
             <list_casttalents name="destruction_types">
-                <anchored>
-                    <top parent="topanchor" anchor="bottom" relation="relative" />
-                    <left parent="topanchor" anchor="left" />
-                    <right />
-                </anchored>
                 <datasource>.spells.spell0.destruction_types</datasource>
             </list_casttalents>
             <list_casttalents name="destruction_other">
-                <anchored>
-                    <top parent="topanchor" anchor="bottom" relation="relative" />
-                    <left parent="topanchor" anchor="left" />
-                    <right />
-                </anchored>
                 <datasource>.spells.spell0.destruction_other</datasource>
             </list_casttalents>
         </sheetdata>
@@ -312,6 +298,11 @@
         <list_text>
             <child><backcolor /></child>
             <noscroll />
+            <anchored>
+                <top parent="topanchor" anchor="bottom" relation="relative" />
+                <left parent="topanchor" anchor="left" />
+                <right />
+            </anchored>
             <sortby><field>name</field></sortby>
             <class>cast_talent</class>
         </list_text>
@@ -434,7 +425,6 @@
                     <top offset="2" />
                     <right parent="rightanchor" anchor="left" relation="relative" offset="-5" />
                 </anchored>
-                <empty textres="spell_emptydesc" />
             </string_spell>
 
             <string_spell name="name">
@@ -447,7 +437,7 @@
                 <empty textres="library_recordtype_empty_spell" />
                 <script>
                     function onDoubleClick(x, y)
-                    DB.setValue(window.getDatabaseNode(), ".selected", "number", 1);
+                        DB.setValue(window.getDatabaseNode(), ".selected", "number", 1);
                     end
                 </script>
             </string_spell>

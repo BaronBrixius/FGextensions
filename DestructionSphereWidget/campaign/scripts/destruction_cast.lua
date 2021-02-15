@@ -2,69 +2,64 @@ local bDataChangedLock = false;
 
 function onInit()
     local nodeCastBox = getDatabaseNode();
-    DB.addHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateActionValues);
-    DB.addHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateActionValues);
+    DB.addHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
+    DB.addHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 end
 
 function onClose()
     local nodeCastBox = getDatabaseNode();
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateActionValues);
-    DB.removeHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateActionValues);
-end
-
-function setDataChangedLock(bNewValue)
-    bDataChangedLock = bNewValue;
+    DB.removeHandler(DB.getPath(nodeCastBox.getChild("...abilities")), 'onChildUpdate', updateAllActionValues);
+    DB.removeHandler(DB.getPath(nodeCastBox.getChild(".dc.total")), 'onUpdate', updateAllActionValues);
 end
 
 function dataChangeIsLocked()
     if bDataChangedLock then
         return true;
     end
-
     return User.isHost() and #parentcontrol.window.parentcontrol.window.getViewers() > 0;
 end
 
-function setShape(nodeTalent, nSelectionValue)
+function setShape(nodeTalent, bSelected)
     if dataChangeIsLocked() then
         return ;
     end
-    setDataChangedLock(true);
+    bDataChangedLock = true;
 
     for _, window in pairs(destruction_shapes.getWindows()) do
-        window.setSelected(window.getDatabaseNode() == nodeTalent and nSelectionValue == 1);
+        window.setSelected(window.getDatabaseNode() == nodeTalent and bSelected);
     end
 
     updatePPCost();
-    setDataChangedLock(false);
+    bDataChangedLock = false;
 end
 
-function setType(nodeTalent, nSelectionValue)
+function setType(nodeTalent, bSelected)
     if dataChangeIsLocked() then
         return ;
     end
-    setDataChangedLock(true);
+    bDataChangedLock = true;
 
     for _, window in pairs(destruction_types.getWindows()) do
-        window.setSelected(window.getDatabaseNode() == nodeTalent and nSelectionValue == 1);
+        window.setSelected(window.getDatabaseNode() == nodeTalent and bSelected);
     end
 
-    setShapeSpellResistProperty(getSpellResistPropertyFromType())
+    setShapesSpellResistIgnoreProperty(bSelected and getSpellResistIgnoreProperty(nodeTalent))
     updatePPCost();
-    setDataChangedLock(false);
+    bDataChangedLock = false;
 end
 
 function setOtherTalent()
     if dataChangeIsLocked() then
         return ;
     end
-    setDataChangedLock(true);
+    bDataChangedLock = true;
 
     for _, window in pairs(destruction_other.getWindows()) do
         window.setSelected(DB.getValue(window.getDatabaseNode(), ".selected", 0) == 1)
     end
 
     updatePPCost();
-    setDataChangedLock(false);
+    bDataChangedLock = false;
 end
 
 function updatePPCost()
@@ -72,30 +67,7 @@ function updatePPCost()
 end
 
 function getTotalPPCost()
-    local nCost = 0;
-
-    for _, window in pairs(destruction_shapes.getWindows()) do
-        local nodeTalent = window.getDatabaseNode();
-        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
-            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
-            break;
-        end
-    end
-
-    for _, window in pairs(destruction_types.getWindows()) do
-        local nodeTalent = window.getDatabaseNode();
-        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
-            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
-            break;
-        end
-    end
-
-    for _, window in pairs(destruction_other.getWindows()) do
-        local nodeTalent = window.getDatabaseNode();
-        if DB.getValue(nodeTalent, ".selected", 0) == 1 then
-            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
-        end
-    end
+    local nCost = getPPCost(destruction_shapes) + getPPCost(destruction_types) + getPPCost(destruction_other);
 
     if DB.getValue(getDatabaseNode(), ".fullpower", 0) == 1 then
         nCost = nCost + 1;
@@ -104,47 +76,32 @@ function getTotalPPCost()
     return math.max(nCost, 0);
 end
 
---function createBasicCastAction(nodeCastActionsList, bIgnoreSpellResist)
---    local nodeNewAction = nodeCastActionsList.createChild();
---    DB.setValue(nodeNewAction, "type", "string", "cast");
---    DB.setValue(nodeNewAction, "atktype", "string", "rtouch");
---    DB.setValue(nodeNewAction, "talenttype", "string", "shapes");
---
---    DB.setValue(nodeNewAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
---end
---
---function createBasicDamageAction(nodeCastActionsList, bFullPower)
---    local nodeNewAction = nodeCastActionsList.createChild();
---    DB.setValue(nodeNewAction, "type", "string", "damage");
---    DB.setValue(nodeNewAction, "talenttype", "string", "types");
---
---    local nodeDmgEntry = nodeNewAction.createChild("damagelist").createChild();
---    DB.setValue(nodeDmgEntry, "dice", "dice", { "d6" });
---    DB.setValue(nodeDmgEntry, "type", "string", "bludgeoning");
---    DB.setValue(nodeDmgEntry, "dicestat", "string", bFullPower and "cl" or "oddcl");
---end
-
-function getSpellResistPropertyFromType()
-    for _, window in pairs(destruction_types.getWindows()) do
+function getPPCost(wlCastTalents)
+    local nCost = 0;
+    for _, window in pairs(wlCastTalents.getWindows()) do
         local nodeTalent = window.getDatabaseNode();
         if DB.getValue(nodeTalent, ".selected", 0) == 1 then
-            for _, typeAction in pairs(nodeTalent.getChild("actions").getChildren()) do
-                if DB.getValue(typeAction, "type") == "damage" and DB.getValue(typeAction, "dmgnotspell", 0) == 1 then
-                    return true;
-                end
-            end
+            nCost = nCost + DB.getValue(nodeTalent, "cost", 0);
         end
     end
+    return nCost;
+end
 
+function getSpellResistIgnoreProperty(nodeType)
+    for _, typeAction in pairs(nodeType.getChild("actions").getChildren()) do
+        if DB.getValue(typeAction, "type") == "damage" and DB.getValue(typeAction, "dmgnotspell", 0) == 1 then
+            return true;
+        end
+    end
     return false;
 end
 
-function setShapeSpellResistProperty(bIgnoreSpellResist)
+function setShapesSpellResistIgnoreProperty(bIgnoreSpellResist)
     for _, nodeTalent in pairs(destruction_shapes.getDatabaseNode().getChildren()) do
         for _, nodeAction in pairs(nodeTalent.getChild("actions").getChildren()) do
             if DB.getValue(nodeAction, "type") == "cast" then
                 DB.setValue(nodeAction, "srnotallowed", "number", bIgnoreSpellResist and 1 or 0);
-                break;  --only applies to first cast in a shape, since extra effects shouldn't need to reroll SR
+                break ;  --only applies to first cast in a shape, since extra effects shouldn't need to reroll SR
             end
         end
     end
@@ -152,10 +109,10 @@ end
 
 function fullPowerToggled(nSelectionValue)
     updatePPCost();
-    setFullPowerProperty(nSelectionValue == 1)
+    setTypesFullPowerProperty(nSelectionValue == 1)
 end
 
-function setFullPowerProperty(bFullPower)
+function setTypesFullPowerProperty(bFullPower)
     for _, nodeTalent in pairs(destruction_types.getDatabaseNode().getChildren()) do
         for _, nodeAction in pairs(nodeTalent.getChild("actions").getChildren()) do
             if DB.getValue(nodeAction, "type") == "damage" then
@@ -170,20 +127,14 @@ function setFullPowerProperty(bFullPower)
     end
 end
 
-function updateActionValues()
-    for _, windowList in pairs(destruction_shapes.getWindows()) do
-        for _, window in pairs(windowList.actions.getWindows()) do
-            window.updateViews();
-        end
-    end
+function updateAllActionValues()
+    updateActionValues(destruction_shapes);
+    updateActionValues(destruction_types);
+    updateActionValues(destruction_other);
+end
 
-    for _, windowList in pairs(destruction_types.getWindows()) do
-        for _, window in pairs(windowList.actions.getWindows()) do
-            window.updateViews();
-        end
-    end
-
-    for _, windowList in pairs(destruction_other.getWindows()) do
+function updateActionValues(wlCastTalents)
+    for _, windowList in pairs(wlCastTalents.getWindows()) do
         for _, window in pairs(windowList.actions.getWindows()) do
             window.updateViews();
         end
@@ -192,27 +143,23 @@ end
 
 function usePower()
     local nodeSpell = getDatabaseNode();
-    local nodeSpellClass = nodeSpell.getChild(".");
-    local rActor = ActorManager.getActor("", nodeSpell.getChild("..."))
-
     local sMessage;
 
-    if DB.getValue(nodeSpellClass, "castertype", "") == "points" then
-        local nPP = DB.getValue(nodeSpell, ".points", 0);
+    if DB.getValue(nodeSpell.getChild("."), "castertype", "") == "points" then
+        local nPPTotal = DB.getValue(nodeSpell, ".points", 0);
         local nPPUsed = DB.getValue(nodeSpell, ".pointsused", 0);
         local nCost = DB.getValue(nodeSpell, "cast.cost", 0);
 
-        sMessage = DB.getValue(nodeSpell, "name", "") .. " [" .. nCost .. " PP]";
-        if (nPP - nPPUsed) < nCost then
+        sMessage = "Destructive Blast " .. " [" .. nCost .. " PP]";
+        if (nPPTotal - nPPUsed) < nCost then
             sMessage = sMessage .. " [INSUFFICIENT PP AVAILABLE]";
         else
-            nPPUsed = nPPUsed + nCost;
-            DB.setValue(nodeSpell, ".pointsused", "number", nPPUsed);
+            DB.setValue(nodeSpell, ".pointsused", "number", nPPUsed + nCost);
         end
     else
-        sMessage = DB.getValue(nodeSpell, "name", "") .. " [SPELL CLASS DOES NOT USE PP]";
+        sMessage = "Destructive Blast " .. " [SPELL CLASS DOES NOT USE PP]";
     end
 
-    ChatManager.Message(sMessage, ActorManager.isPC(rActor), rActor);
+    ChatManager.Message(sMessage, true, ActorManager.getActor("", nodeSpell.getChild("...")));
 end
 
