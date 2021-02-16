@@ -1,4 +1,5 @@
 -- TODO FHEAL temp health?
+-- todo auto hp scaling (con damage/negative levels)
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -10,6 +11,7 @@ local oldClearCritState;
 local oldAddItemToList;
 local oldPerformAction;
 local oldGetDefenseValue;
+local oldOnAttack;
 
 function onInit()
     -- Demoralize
@@ -66,7 +68,21 @@ function onInit()
     table.insert(DataCommon.targetableeffectcomps, "MISS");
     oldGetDefenseValue = ActorManager2.getDefenseValue;
     ActorManager2.getDefenseValue = getMissChanceDefenseValue;
+
+    --Fix crit confirmation applying atk effects twice
+    oldOnAttack = ActionAttack.onAttack;
+    ActionAttack.onAttack = onAttack;
+    ActionsManager.registerResultHandler("critconfirm", onAttack);
 end
+
+function onAttack(rSource, rTarget, rRoll)
+    if rRoll.sType == "critconfirm" then
+        rRoll.sDesc = rRoll.sDesc:gsub("%[" .. Interface.getString("effects_tag") .. " %+%d-%] ", "")
+    end
+
+    oldOnAttack(rSource, rTarget, rRoll);
+end
+
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
     local nodeNew = oldAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount);
