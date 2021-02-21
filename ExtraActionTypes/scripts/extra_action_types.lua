@@ -66,8 +66,8 @@ function onInit()
 
     -- Scaling Miss Chance
     table.insert(DataCommon.targetableeffectcomps, "MISS");
-    oldGetDefenseValue = ActorManager2.getDefenseValue;
-    ActorManager2.getDefenseValue = getMissChanceDefenseValue;
+    oldGetDefenseValue = ActorManager35E.getDefenseValue;
+    ActorManager35E.getDefenseValue = getMissChanceDefenseValue;
 
     --Fix crit confirmation applying atk effects twice
     oldOnAttack = ActionAttack.onAttack;
@@ -114,7 +114,7 @@ end
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     local nHealthBeforeAttack = getTotalHP(rTarget);
 
-    if ActorManager2.isCreatureType(rTarget, "undead") then
+    if ActorManager35E.isCreatureType(rTarget, "undead") then
         sRollType, sDamage, nTotal = applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
     end
 
@@ -227,12 +227,12 @@ function applyAlternateScaling(rActor, rAction, nodeAction)
 
     local sBase = DB.getValue(nodeAction, "attackbabreplace", "");
     if sBase == "cl" then
-        rAction.modifier = rAction.modifier - ActorManager2.getAbilityScore(rActor, "bab") + DB.getValue(nodeAction, ".......cl", "");
+        rAction.modifier = rAction.modifier - ActorManager35E.getAbilityScore(rActor, "bab") + DB.getValue(nodeAction, ".......cl", "");
     end
 
     local sStat = DB.getValue(nodeAction, "attackstatreplace", "");
     if sStat ~= "" and sStat ~= rAction.stat then
-        rAction.modifier = rAction.modifier - ActorManager2.getAbilityBonus(rActor, rAction.stat) + ActorManager2.getAbilityBonus(rActor, sStat);
+        rAction.modifier = rAction.modifier - ActorManager35E.getAbilityBonus(rActor, rAction.stat) + ActorManager35E.getAbilityBonus(rActor, sStat);
         rAction.stat = sStat;
     end
 end
@@ -337,7 +337,7 @@ function onDemoralizeRoll(rSource, rTarget, rRoll)
             rMessage.text = rMessage.text .. " [FAILURE]";
         end
     elseif rTarget then
-        local nTargetDC = 10 + ActorManager2.getAbilityScore(rTarget, "lev") + ActorManager2.getAbilityBonus(rTarget, "wisdom");
+        local nTargetDC = 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom");
 
         rMessage.text = rMessage.text .. " [at " .. ActorManager.getDisplayName(rTarget) .. "]";
         if nTotal >= nTargetDC then
