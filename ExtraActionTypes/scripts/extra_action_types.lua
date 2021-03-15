@@ -70,18 +70,17 @@ function onInit()
 
     --Fix crit confirmation applying atk effects twice
     oldOnAttack = ActionAttack.onAttack;
-    ActionAttack.onAttack = onAttack;
-    ActionsManager.registerResultHandler("critconfirm", onAttack);
+    ActionAttack.onAttack = newOnAttack;
+    ActionsManager.registerResultHandler("critconfirm", newOnAttack);
 end
 
-function onAttack(rSource, rTarget, rRoll)
-    if rRoll.sType == "critconfirm" then
+function newOnAttack(rSource, rTarget, rRoll)
+    if rRoll.sType == "critconfirm" then   -- remove [EFFECTS +X] tag as it was applying a second time to crit confirmations
         rRoll.sDesc = rRoll.sDesc:gsub("%[" .. Interface.getString("effects_tag") .. " %+%d-%] ", "")
     end
 
     oldOnAttack(rSource, rTarget, rRoll);
 end
-
 
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
     local nodeNew = oldAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount);
