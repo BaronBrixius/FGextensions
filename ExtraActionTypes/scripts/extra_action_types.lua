@@ -1,4 +1,6 @@
--- todo check crit heal dmg on undead
+-- todo move Demoralize to its own action type (maybe a whole skill action type?)
+-- fixed crit heal dmg on undead
+-- fixed demoralize for NPCs
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -211,22 +213,42 @@ function applyTempHPChanges(nTotal, rTarget, sDamage)
 end
 
 function newGetSpellAction(rActor, nodeAction, sSubRoll)
-    local rAction = SpellManager.getSpellAction(rActor, nodeAction, sSubRoll);  --old version of the function
-
-    applyDemoralizeAction(rAction, nodeAction);
-    applyAlternateScaling(rActor, rAction, nodeAction)
+    local rAction = SpellManager.getSpellAction(rActor, nodeAction, sSubRoll);
+    if rAction.type == "cast" and DB.getValue(nodeAction, "atktype", "") == "demoralize" then
+        applyDemoralizeAction(rActor, rAction);
+    else
+        applyAlternateSpellAttackScaling(rActor, rAction, nodeAction)
+    end
 
     return rAction;
 end
 
-function applyDemoralizeAction(rAction, nodeAction)
-    if rAction.type == "cast" and DB.getValue(nodeAction, "atktype", "") == "demoralize" then
-        rAction.demo = true;
-        rAction.range = nil;
+function applyDemoralizeAction(rActor, rAction)
+    rAction.demo = true;
+    rAction.range = nil;
+
+    local sNodeType, nodeActor = ActorManager.getTypeAndNode(rActor);
+    if not nodeActor then
+        return;
+    end
+    if sNodeType == "pc" then
+        rAction.modifier = CharManager.getSkillValue(rActor, "Intimidate");
+    elseif ActorManager.isRecordType(rActor, "npc") then
+        local sSkills = DB.getValue(nodeActor, "skills", "");
+        local aSkillClauses = StringManager.split(sSkills, ",;\r", true);
+        for i = 1, #aSkillClauses do
+            local nStarts, nEnds, sLabel, sSign, sMod = string.find(aSkillClauses[i], "([%w%s\(\)]*[%w\(\)]+)%s*([%+%-�]?)(%d*)");
+            if nStarts and string.lower(sLabel) == "intimidate" and sMod ~= "" then
+                rAction.modifier = tonumber(sMod) or 0;
+                if sSign == "-" or sSign == "�" then
+                    rAction.modifier = -rAction.modifier;
+                end
+            end
+        end
     end
 end
 
-function applyAlternateScaling(rActor, rAction, nodeAction)
+function applyAlternateSpellAttackScaling(rActor, rAction, nodeAction)
     if rAction.type ~= "cast" then
         return ;
     end
@@ -276,7 +298,7 @@ function newOnSpellActionDemoralize(draginfo, nodeAction, sSubRoll)
             if rAction.range then
                 table.insert(rRolls, ActionAttack.getRoll(rActor, rAction));
             elseif rAction.demo then
-                local rRoll = ActionSkill.getRoll(rActor, "Demoralize", CharManager.getSkillValue(rActor, "Intimidate"));
+                local rRoll = ActionSkill.getRoll(rActor, "Intimidate", rAction.modifier);
                 rRoll.sType = "demoralize";
                 table.insert(rRolls, rRoll);
             end
@@ -397,9 +419,10 @@ function useTargetsInitIfLabelled(nodeCT, rNewEffect)
     --copypasted default dupe check
     local nodeEffectsList = nodeCT.createChild("effects");
     for _, v in pairs(nodeEffectsList.getChildren()) do
-        if (DB.getValue(v, "label", "") == rNewEffect.sName) and
-                (DB.getValue(v, "init", 0) == rNewEffect.nInit) and
-                (DB.getValue(v, "duration", 0) == rNewEffect.nDuration) then
+        if (DB.getValue(v, "label", "") == rNewEffect.sName)
+                and (DB.getValue(v, "init", 0) == rNewEffect.nInit)
+                --and (DB.getValue(v, "duration", 0) == rNewEffect.nDuration)
+            then
             return "Effect ['" .. rNewEffect.sName .. "'] -> [ALREADY EXISTS]"
         end
     end
