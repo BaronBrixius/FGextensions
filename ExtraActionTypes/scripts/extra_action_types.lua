@@ -1,5 +1,4 @@
--- TODO FHEAL temp health?
--- todo auto hp scaling (con damage/negative levels)
+-- todo check crit heal dmg on undead
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -140,7 +139,12 @@ end
 
 function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     if sRollType == "heal" then
-        return "spdamage", sDamage:gsub("%[HEAL", "[DAMAGE") .. " [TYPE: positive, spell (" .. nTotal .. ")]", nTotal;
+        local sNewDamage = sDamage:gsub("%[HEAL", "[DAMAGE") .." [TYPE: positive, spell (" .. nTotal .. ")]";
+        if ActionAttack.isCrit(rSource, rTarget) or ModifierStack.getModifierKey("DMG_CRIT") or Input.isShiftPressed() then
+            sNewDamage = sNewDamage:gsub("%[TYPE", "[CRITICAL] [TYPE") .. " [TYPE: positive, spell, critical (" .. nTotal .. ")]";
+            nTotal = nTotal * 2;
+        end
+        return "spdamage", sNewDamage, nTotal;
     end
 
     if sRollType:find("damage") and sDamage:find("negative", 1, 1) then
@@ -161,6 +165,9 @@ function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamag
         end
 
         if nNegativeDamage > 0 then
+            if sDamage:find("[CRITICAL]",1,1) then
+                nNegativeDamage = nNegativeDamage / 2;
+            end
             return "heal", sDamage:gsub("%[DAMAGE", "[HEAL"):gsub("%[TYPE.*", ""), nNegativeDamage;
         end
     end
