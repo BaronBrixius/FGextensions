@@ -1,6 +1,8 @@
 -- todo move Demoralize to its own action type (maybe a whole skill action type?)
+-- todo automatic magical skill bonus checks
 -- fixed crit heal dmg on undead
 -- fixed demoralize for NPCs
+-- added Resolve Mandate
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -550,6 +552,7 @@ end
 function applyAttackAndSetVitalityLossState(rSource, rTarget, bSecret, sAttackType, sDesc, nTotal, sResults)
     if sResults:find("HIT", 1, 1) then
         setVitalityLossState(rTarget, true);
+        applyResolveMandate(rSource, rTarget);
     end
 
     oldApplyAttack(rSource, rTarget, bSecret, sAttackType, sDesc, nTotal, sResults);
@@ -594,6 +597,21 @@ function setVitalityLossState(rVitalActor, bVitalityLossState)
         return ;
     end
     aVitalityLossState[sVitalCT] = bVitalityLossState;
+end
+
+function applyResolveMandate(rSource, rTarget)
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rSource), "effects")) do
+        if string.find(DB.getValue(nodeEffect, "label", ""), "Resolve: ", 1, true) then
+            local sMandatePartnerName = string.gsub(DB.getValue(nodeEffect, "label", ""), "Resolve: ", "");
+            for _,nodeCT in pairs(CombatManager.getCombatantNodes()) do
+                if (DB.getValue(nodeCT, "name", "") == sMandatePartnerName) then
+                    local rResolveEffect = { sName = "TINIT; AC: 4 morale; SAVE: 4 morale", nDuration = 1.5, sTarget = rTarget.sCTNode};
+                    EffectManager.addEffect(rSource.sCTNode, "", nodeCT, rResolveEffect, true);
+                    break;
+                end
+            end
+        end
+    end
 end
 
 local nConcentrationDC;
