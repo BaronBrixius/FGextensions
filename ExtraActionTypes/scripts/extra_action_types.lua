@@ -15,6 +15,8 @@ local oldAddItemToList;
 local oldPerformAction;
 local oldGetDefenseValue;
 local oldOnAttack;
+local oldOnMissChance;
+local oldOnMirrorImage;
 
 function onInit()
     -- Demoralize
@@ -76,6 +78,17 @@ function onInit()
     oldOnAttack = ActionAttack.onAttack;
     ActionAttack.onAttack = newOnAttack;
     ActionsManager.registerResultHandler("critconfirm", newOnAttack);
+
+    oldOnMissChance = ActionAttack.onMissChance;
+    ActionAttack.onMissChance = newOnMissChance;
+    ActionsManager.registerResultHandler("misschance", newOnMissChance);
+
+    -- Mirror Image stolen
+    if MirrorImageHandler then
+        oldOnMirrorImage = MirrorImageHandler.onMirrorImage;
+        MirrorImageHandler.onMirrorImage = newOnMirrorImage;
+        ActionsManager.registerResultHandler("mirrorimage", newOnMirrorImage);
+    end
 end
 
 function newOnAttack(rSource, rTarget, rRoll)
@@ -551,12 +564,54 @@ function applySaveStalwartAndVitality(rSource, rOrigin, rAction, sUser)
 end
 
 function newApplyAttack(rSource, rTarget, bSecret, sAttackType, sDesc, nTotal, sResults)
-    if sResults:find("HIT", 1, 1) then
-        setVitalityLossState(rTarget, true);
-        applyResolveMandate(rSource, rTarget);
+    if sResults:find("HIT", 1, 1) and not sResults:find("MISS CHANCE", 1, 1)
+        and not (MirrorImageHandler and MirrorImageHandler.getMirrorImageCount(rTarget) > 0) then
+        applyOnHitEffects(rSource, rTarget);
     end
 
     oldApplyAttack(rSource, rTarget, bSecret, sAttackType, sDesc, nTotal, sResults);
+end
+
+function newOnMissChance(rSource, rTarget, rRoll)
+    local rMessage = ActionsManager.createActionMessage(rSource, rRoll);
+
+    local nTotal = ActionsManager.total(rRoll);
+    local nMissChance = tonumber(string.match(rMessage.text, "%[MISS CHANCE (%d+)%%%]")) or 0;
+    if nTotal <= nMissChance then
+        rMessage.text = rMessage.text .. " [MISS]";
+        if rTarget then
+            rMessage.icon = "roll_attack_miss";
+            ActionAttack.clearCritState(rSource, rTarget);
+        else
+            rMessage.icon = "roll_attack";
+        end
+    else
+        local nMirrorImageCount = 0;
+        Debug.chat(Extension.getExtensions())
+        if MirrorImageHandler then
+            nMirrorImageCount = MirrorImageHandler.getMirrorImageCount(rTarget);
+        end
+        if nMirrorImageCount > 0 then
+            local rMirrorImageRoll = MirrorImageHandler.getMirrorImageRoll(nMirrorImageCount, rRoll.sDesc);
+            ActionsManager.roll(rSource, rTarget, rMirrorImageRoll);
+        else
+            applyOnHitEffects(rSource, rTarget);
+        end
+
+        rMessage.text = rMessage.text .. " [HIT]";
+        if rTarget then
+            rMessage.icon = "roll_attack_hit";
+        else
+            rMessage.icon = "roll_attack";
+        end
+    end
+
+    Comm.deliverChatMessage(rMessage);
+end
+
+function applyOnHitEffects(rSource, rTarget)
+    setVitalityLossState(rTarget, true);
+    applyResolveMandate(rSource, rTarget);
 end
 
 function clearCritAndVitalityLossState(rSource, rTarget)
@@ -698,7 +753,7 @@ function getMissChanceDefenseValue(rAttacker, rDefender, rRoll)
 
     local aMissEffects = EffectManager35E.getEffectsBonusByType(rDefender, {"MISS"}, true, aAttackFilter, rAttacker);
 
-    for k,v in pairs(aMissEffects) do
+    for _,v in pairs(aMissEffects) do
         if nMissChance == 20 then       -- stacks with fog CONC
             nMissChance = math.max(v.mod, nMissChance) + (math.min(v.mod, nMissChance) / 2);
         else
@@ -711,4 +766,12 @@ function getMissChanceDefenseValue(rAttacker, rDefender, rRoll)
     end
 
     return nDefense, nAttackEffectMod, nDefenseEffectMod, nMissChance;
+end
+
+function newOnMirrorImage(rSource, rTarget, rRoll)
+    if rRoll.aDice[1].result > MirrorImageHandler.getMirrorImageHitPercent(tonumber(rRoll.sDesc:match("(%d+) MIRROR IMAGES"))) then
+        applyOnHitEffects(rSource, rTarget);
+    end
+
+    oldOnMirrorImage(rSource, rTarget, rRoll);
 end
