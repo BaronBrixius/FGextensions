@@ -43,7 +43,7 @@ function onInit()
     ActionSave.applySave = applySaveStalwartAndVitality;    --also Stalwart
 
     oldApplyAttack = ActionAttack.applyAttack;
-    ActionAttack.applyAttack = applyAttackAndSetVitalityLossState;
+    ActionAttack.applyAttack = newApplyAttack;
 
     oldClearCritState = ActionAttack.clearCritState;
     ActionAttack.clearCritState = clearCritAndVitalityLossState;
@@ -423,6 +423,7 @@ function useTargetsInitIfLabelled(nodeCT, rNewEffect)
     for _, v in pairs(nodeEffectsList.getChildren()) do
         if (DB.getValue(v, "label", "") == rNewEffect.sName)
                 and (DB.getValue(v, "init", 0) == rNewEffect.nInit)
+                and DB.getValue(v, "targets.id-00001.noderef", nil) == rNewEffect.sTarget
                 --and (DB.getValue(v, "duration", 0) == rNewEffect.nDuration)
             then
             return "Effect ['" .. rNewEffect.sName .. "'] -> [ALREADY EXISTS]"
@@ -549,7 +550,7 @@ function applySaveStalwartAndVitality(rSource, rOrigin, rAction, sUser)
     end
 end
 
-function applyAttackAndSetVitalityLossState(rSource, rTarget, bSecret, sAttackType, sDesc, nTotal, sResults)
+function newApplyAttack(rSource, rTarget, bSecret, sAttackType, sDesc, nTotal, sResults)
     if sResults:find("HIT", 1, 1) then
         setVitalityLossState(rTarget, true);
         applyResolveMandate(rSource, rTarget);
@@ -606,7 +607,7 @@ function applyResolveMandate(rSource, rTarget)
             for _,nodeCT in pairs(CombatManager.getCombatantNodes()) do
                 if (DB.getValue(nodeCT, "name", "") == sMandatePartnerName) then
                     local rResolveEffect = { sName = "TINIT; AC: 4 morale; SAVE: 4 morale", nDuration = 1.5, sTarget = rTarget.sCTNode};
-                    EffectManager.addEffect(rSource.sCTNode, "", nodeCT, rResolveEffect, true);
+                    EffectManager.addEffect(nodeEffect.getOwner(), "", nodeCT, rResolveEffect, true);
                     break;
                 end
             end
