@@ -1,5 +1,6 @@
 -- todo move Demoralize to its own action type (maybe a whole skill action type?)
 -- todo automatic magical skill bonus checks
+-- todo "regenerating" effects that apply every turn (spell_action_mini not done)
 -- fixed crit heal dmg on undead
 -- fixed demoralize for NPCs
 -- added Resolve Mandate
@@ -17,6 +18,10 @@ local oldGetDefenseValue;
 local oldOnAttack;
 local oldOnMissChance;
 local oldOnMirrorImage;
+local oldHasEffect;
+local oldGetEffectsByType;
+local oldNotifyExpire;
+local oldProcessEffect;
 
 function onInit()
     -- Demoralize
@@ -83,12 +88,25 @@ function onInit()
     ActionAttack.onMissChance = newOnMissChance;
     ActionsManager.registerResultHandler("misschance", newOnMissChance);
 
-    -- Mirror Image stolen
+    -- Mirror Image insert
     if MirrorImageHandler then
         oldOnMirrorImage = MirrorImageHandler.onMirrorImage;
         MirrorImageHandler.onMirrorImage = newOnMirrorImage;
         ActionsManager.registerResultHandler("mirrorimage", newOnMirrorImage);
     end
+
+    -- Once Per Turn Effects
+    oldHasEffect = EffectManager35E.hasEffect;
+    EffectManager35E.hasEffect = newHasEffect;
+
+    oldGetEffectsByType = EffectManager35E.getEffectsByType;
+    EffectManager35E.getEffectsByType = newGetEffectsByType;
+
+    oldNotifyExpire = EffectManager.notifyExpire;
+    EffectManager.notifyExpire = newNotifyExpire;
+
+    oldProcessEffect = EffectManager.processEffect;
+    EffectManager.processEffect = newProcessEffect;
 end
 
 function newOnAttack(rSource, rTarget, rRoll)
@@ -110,10 +128,8 @@ function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
 end
 
 function newOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
-    if oldOnEffectEndTurn then
-        if oldOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit) then
-            return true;
-        end
+    if oldOnEffectEndTurn and oldOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit) then
+        return true;
     end
 
     --If an effect's duration is less than 1, expire it (e.g. set duration as 1.5 for it to last 1 round but expire at end of turn)
@@ -774,4 +790,78 @@ function newOnMirrorImage(rSource, rTarget, rRoll)
     end
 
     oldOnMirrorImage(rSource, rTarget, rRoll);
+end
+
+function newHasEffect(rActor, sEffect, rTarget, bTargetedOnly, bIgnoreEffectTargets)
+    if not sEffect or not rActor then
+        return false;
+    end
+
+    --replace per-turn tag with action tag so it gets treated as such, except deletion will be intercepted
+    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
+        if DB.getValue(v, "apply", "") == "turn" then
+            DB.setValue(v, "apply", "string", "action");
+            DB.setValue(v, "onceperturn", "number", 1);
+        end
+    end
+
+    local result = oldHasEffect(rActor, sEffect, rTarget, bTargetedOnly, bIgnoreEffectTargets);
+
+    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
+        if DB.getValue(v, "onceperturn", 0) == 1 then
+            DB.setValue(v, "apply", "string", "turn");
+        end
+    end
+
+    return result;
+end
+
+function newGetEffectsByType(rActor, sEffectType, aFilter, rFilterActor, bTargetedOnly)
+    if not rActor then
+        return {};
+    end
+
+    --replace per-turn tag with action tag so it gets treated as such, except deletion will be intercepted
+    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
+        local sApply = DB.getValue(v, "apply", "");
+        if sApply == "turn" then
+            DB.setValue(v, "apply", "string", "action");
+            DB.setValue(v, "onceperturn", "number", 1);
+        else
+            DB.setValue(v, "onceperturn", "number", 0);
+        end
+    end
+
+    local results = oldGetEffectsByType(rActor, sEffectType, aFilter, rFilterActor, bTargetedOnly);
+
+    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
+        if DB.getValue(v, "onceperturn", 0) == 1 then
+            DB.setValue(v, "apply", "string", "turn");
+        end
+    end
+
+    return results;
+end
+
+function newNotifyExpire(varEffect, nMatch, bImmediate)
+    if type(varEffect) == "databasenode" then
+        if DB.getValue(varEffect, "onceperturn", 0) == 1 then
+            DB.setValue(varEffect, "isactive", "number", 0);
+            return;
+        end
+
+        varEffect = varEffect.getPath();
+    elseif type(varEffect) ~= "string" then
+        return;
+    end
+
+    oldNotifyExpire(varEffect, nMatch, bImmediate);
+end
+
+function newProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd)
+    if bProcessSpecialStart and DB.getValue(nodeEffect, "apply", "") == "turn" then
+        DB.setValue(nodeEffect, "isactive", "number", 1);
+    end
+
+    oldProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd);
 end

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<root>
+    <template name="spell_action_effectapply">
+        <button_iconcycler name="apply">
+            <anchored to="targeting" position="below" offset="0,1" height="10" />
+            <parameters>
+                <icons>button_toggle_action|button_toggle_roll|button_toggle_single|button_toggle_turn</icons>
+                <values>action|roll|single|turn</values>
+                <tooltipsres>effect_tooltip_applyone|effect_tooltip_applyroll|effect_tooltip_applysingle|effect_tooltip_onceperturn</tooltipsres>
+                <defaulticon>button_toggle_all</defaulticon>
+                <defaulttooltipres>effect_tooltip_applyall</defaulttooltipres>
+            </parameters>
+        </button_iconcycler>
+    </template>
+    <template name="button_effect_apply">
+        <button_iconcycler name="apply">
+            <anchored to="leftanchor" width="24" height="10">
+                <top offset="5"/>
+                <left anchor="right" relation="relative" offset="2" />
+            </anchored>
+            <parameters>
+                <icons>button_toggle_action|button_toggle_roll|button_toggle_single|button_toggle_turn</icons>
+                <values>action|roll|single|turn</values>
+                <tooltipsres>effect_tooltip_applyone|effect_tooltip_applyroll|effect_tooltip_applysingle|effect_tooltip_onceperturn</tooltipsres>
+                <defaulticon>button_toggle_all</defaulticon>
+                <defaulttooltipres>effect_tooltip_applyall</defaulttooltipres>
+            </parameters>
+        </button_iconcycler>
+    </template>
+    <windowclass name="power_effect_editor_main" merge="join">
+        <sheetdata>
+            <button_stringcycler name="apply">
+                <anchored width="120" height="20">
+                    <top parent="columnanchor" anchor="bottom" relation="relative" offset="7" />
+                    <left offset="97" />
+                </anchored>
+                <parameters>
+                    <defaultlabelres>power_label_effect_applyall</defaultlabelres>
+                    <labelsres>power_label_effect_applyaction|power_label_effect_applyroll|power_label_effect_applysingle|power_label_effect_applyturn</labelsres>
+                    <values>action|roll|single|turn</values>
+                </parameters>
+            </button_stringcycler>
+        </sheetdata>
+    </windowclass>
+    <windowclass name="ct_effect" merge="join">
+        <sheetdata>
+            <button_ct_effect_apply name="apply" insertbefore="rightanchor">
+                <parameters>
+                    <icons>button_toggle_action|button_toggle_roll|button_toggle_single|button_toggle_turn</icons>
+                    <values>action|roll|single|turn</values>
+                    <tooltipsres>effect_tooltip_applyone|effect_tooltip_applyroll|effect_tooltip_applysingle|effect_tooltip_onceperturn</tooltipsres>
+                </parameters>
+            </button_ct_effect_apply>
+        </sheetdata>
+    </windowclass>
+    <!--    <windowclass name="effectsmall">-->
+<!--        <sheetdata>-->
+<!--            <button_effect_apply2 name="apply" insertbefore="rightanchor" />-->
+
+<!--            <button_effect_units name="unit" insertbefore="duration" />-->
+<!--        </sheetdata>-->
+<!--    </windowclass>-->
+
+</root>
