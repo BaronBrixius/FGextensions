@@ -1,9 +1,6 @@
 -- todo move Demoralize to its own action type (maybe a whole skill action type?)
 -- todo automatic magical skill bonus checks
--- todo "regenerating" effects that apply every turn (spell_action_mini not done)
--- fixed crit heal dmg on undead
--- fixed demoralize for NPCs
--- added Resolve Mandate
+-- todo "regenerating" effects that apply every turn (spell_action_mini not done) (drag and drop)
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -18,8 +15,6 @@ local oldGetDefenseValue;
 local oldOnAttack;
 local oldOnMissChance;
 local oldOnMirrorImage;
-local oldHasEffect;
-local oldGetEffectsByType;
 local oldNotifyExpire;
 local oldProcessEffect;
 
@@ -96,12 +91,6 @@ function onInit()
     end
 
     -- Once Per Turn Effects
-    oldHasEffect = EffectManager35E.hasEffect;
-    EffectManager35E.hasEffect = newHasEffect;
-
-    oldGetEffectsByType = EffectManager35E.getEffectsByType;
-    EffectManager35E.getEffectsByType = newGetEffectsByType;
-
     oldNotifyExpire = EffectManager.notifyExpire;
     EffectManager.notifyExpire = newNotifyExpire;
 
@@ -400,7 +389,7 @@ function onDemoralizeRoll(rSource, rTarget, rRoll)
 
         rMessage.text = rMessage.text .. " [at " .. ActorManager.getDisplayName(rTarget) .. "]";
         if nTotal >= nTargetDC then
-            rMessage.text = rMessage.text .. " [SUCCESS] BEAT BY " .. math.floor((nTotal - nTargetDC) / 5) * 5 .. "+";
+            rMessage.text = rMessage.text .. " [SUCCESS] BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+";
         else
             rMessage.text = rMessage.text .. " [FAILURE]";
         end
@@ -649,7 +638,7 @@ end
 
 function removeVitalityEffects(rTarget)
     for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
-        if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "vitality;", 1, true) then
+        if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "^vitality;", 1, true) then
             EffectManager.expireEffect(rTarget, nodeEffect, 0);
         end
     end
@@ -792,6 +781,7 @@ function newOnMirrorImage(rSource, rTarget, rRoll)
     oldOnMirrorImage(rSource, rTarget, rRoll);
 end
 
+
 function newHasEffect(rActor, sEffect, rTarget, bTargetedOnly, bIgnoreEffectTargets)
     if not sEffect or not rActor then
         return false;
@@ -845,7 +835,7 @@ end
 
 function newNotifyExpire(varEffect, nMatch, bImmediate)
     if type(varEffect) == "databasenode" then
-        if DB.getValue(varEffect, "onceperturn", 0) == 1 then
+        if DB.getValue(varEffect, "label", ""):lower():find("^turn;") then
             DB.setValue(varEffect, "isactive", "number", 0);
             return;
         end
@@ -859,7 +849,7 @@ function newNotifyExpire(varEffect, nMatch, bImmediate)
 end
 
 function newProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd)
-    if bProcessSpecialStart and DB.getValue(nodeEffect, "apply", "") == "turn" then
+    if bProcessSpecialStart and DB.getValue(nodeEffect, "label", ""):lower():find("^turn;") then
         DB.setValue(nodeEffect, "isactive", "number", 1);
     end
 

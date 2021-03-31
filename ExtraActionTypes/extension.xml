@@ -18,9 +18,9 @@
     <base>
         <script name="ExtraActionTypes" file="scripts/extra_action_types.lua" />
         <includefile source="campaign/record_spell_roll.xml" />
-        <includefile source="campaign/record_spell_entry.xml" />
+<!--        <includefile source="campaign/record_spell_entry.xml" />-->
         <includefile source="strings/extra_action_strings.xml" />
 
-        <icon name="button_toggle_turn" file="graphics/buttons/button_toggle_turn.png" />
+<!--        <icon name="button_toggle_turn" file="graphics/buttons/button_toggle_turn.png" />-->
     </base>
 </root>
