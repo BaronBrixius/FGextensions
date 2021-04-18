@@ -10,6 +10,7 @@ local oldCustomOnEffectAddIgnoreCheck;
 local oldApplyAttack;
 local oldClearCritState;
 local oldAddItemToList;
+local oldCompareFields;
 local oldPerformAction;
 local oldGetDefenseValue;
 local oldOnAttack;
@@ -54,6 +55,9 @@ function onInit()
     oldAddItemToList = ItemManager.addItemToList;
     ItemManager.addItemToList = newAddItemToList;
     OptionsManager.registerOption2("AUTOIDENTIFY", false, "option_header_game", "option_label_AUTOIDENTIFY", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
+
+    oldCompareFields = ItemManager.compareFields;
+    ItemManager.compareFields = newCompareFields;
 
     -- Temp HP Changes & Auto Concentration
     oldApplyDamage = ActionDamage.applyDamage;
@@ -109,11 +113,19 @@ end
 function newAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount)
     local nodeNew = oldAddItemToList(vList, sClass, vSource, bTransferAll, nTransferCount);
 
-    if User.isHost() and OptionsManager.getOption("AUTOIDENTIFY"):lower() == "on" and type(vList) == "string" and ItemManager.getItemSourceType(DB.createNode(vList)) == "partysheet" then
+    if User.isHost() and OptionsManager.getOption("AUTOIDENTIFY"):lower() == "on" and ItemManager.getItemSourceType(DB.createNode(vList)) == "partysheet" then
         DB.setValue(nodeNew, "isidentified", "number", 1);
     end
 
     return nodeNew;
+end
+
+function newCompareFields(node1, node2, bTop)
+    if User.isHost() and OptionsManager.getOption("AUTOIDENTIFY"):lower() == "on" and ItemManager.getItemSourceType(node2) == "partysheet" then
+        DB.setValue(node2, "isidentified", "number", 1);
+    end
+
+    return oldCompareFields(node1, node2, bTop);
 end
 
 function newOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
