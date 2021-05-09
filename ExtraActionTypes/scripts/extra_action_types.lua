@@ -1,6 +1,4 @@
 -- todo move Demoralize to its own action type (maybe a whole skill action type?)
--- todo automatic magical skill bonus checks
--- todo "regenerating" effects that apply every turn (spell_action_mini not done) (drag and drop)
 
 local oldOnSpellAction;
 local oldGetActionAttackText;
@@ -40,7 +38,7 @@ function onInit()
 
     -- Use Target Initiative For Effect
     oldCustomOnEffectAddIgnoreCheck = EffectManager.fCustomOnEffectAddIgnoreCheck;
-    EffectManager.setCustomOnEffectAddIgnoreCheck(useTargetsInitIfLabelled);
+    EffectManager.setCustomOnEffectAddIgnoreCheck(customOnEffectAddIgnoreCheckTargetInit);
 
     -- Vitality
     ActionSave.applySave = applySaveStalwartAndVitality;    --also Stalwart
@@ -100,6 +98,24 @@ function onInit()
 
     oldProcessEffect = EffectManager.processEffect;
     EffectManager.processEffect = newProcessEffect;
+
+    --Auto Aura Application
+    EffectManager.setCustomOnEffectAddEnd(applyNewAuraToOthers);
+end
+
+function applyNewAuraToOthers(nodeTargetEffect, rNewEffect)
+    if not EffectManagerAURA or not string.find(rNewEffect.sName, "^AURA:") then
+        return;
+    end
+
+    local nodeCT = nodeTargetEffect.getParent().getParent();
+    local ctEntries = CombatManager.getSortedCombatantList();
+    for _, node in pairs(ctEntries) do
+        if node ~= nodeCT then
+            EffectManagerAURA.checkAuraApplicationAndAddOrRemove(node, nodeCT, nodeTargetEffect);
+        end
+    end
+
 end
 
 function newOnAttack(rSource, rTarget, rRoll)
@@ -208,7 +224,7 @@ function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamag
     return sRollType, sDamage, nTotal;
 end
 
-function getTotalHP(rActor)
+function getTotalHP(rActor) --todo make this work for NPCs if I care
     local nodeTarget = ActorManager.getCreatureNode(rActor);
     return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0) + DB.getValue(nodeTarget, "hp.temporary", 0);
 end
@@ -441,8 +457,8 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
     return aTargeting;
 end
 
-function useTargetsInitIfLabelled(nodeCT, rNewEffect)
-    if string.find(rNewEffect.sName, "TINIT;") then
+function customOnEffectAddIgnoreCheckTargetInit(nodeCT, rNewEffect)
+    if string.find(rNewEffect.sName, "^TINIT;") then
         --set initiative to target's instead of current and remove label
         rNewEffect.nInit = DB.getValue(nodeCT, "initresult");
         rNewEffect.sName = StringManager.trim(rNewEffect.sName:gsub("TINIT;", ""));
@@ -453,9 +469,14 @@ function useTargetsInitIfLabelled(nodeCT, rNewEffect)
     for _, v in pairs(nodeEffectsList.getChildren()) do
         if (DB.getValue(v, "label", "") == rNewEffect.sName)
                 and (DB.getValue(v, "init", 0) == rNewEffect.nInit)
-                and DB.getValue(v, "targets.id-00001.noderef", nil) == rNewEffect.sTarget
+                and DB.getValue(v, "targets.id-00001.noderef", nil) == rNewEffect.sTarget   --added effect target to dupe check
                 --and (DB.getValue(v, "duration", 0) == rNewEffect.nDuration)
             then
+            local nOriginalEffectDuration = DB.getValue(v, "duration", 0);   --removed duration needing to be identical to count as dupe, now updates old effect to refreshed duration
+            if nOriginalEffectDuration > 0 and (nOriginalEffectDuration < rNewEffect.nDuration or rNewEffect.nDuration == 0) then
+                DB.setValue(v, "duration", "number", rNewEffect.nDuration);
+                return "Effect ['" .. rNewEffect.sName .. "'] -> [EXTENDING DURATION]"
+            end
             return "Effect ['" .. rNewEffect.sName .. "'] -> [ALREADY EXISTS]"
         end
     end
@@ -604,7 +625,6 @@ function newOnMissChance(rSource, rTarget, rRoll)
         end
     else
         local nMirrorImageCount = 0;
-        Debug.chat(Extension.getExtensions())
         if MirrorImageHandler then
             nMirrorImageCount = MirrorImageHandler.getMirrorImageCount(rTarget);
         end
@@ -650,7 +670,7 @@ end
 
 function removeVitalityEffects(rTarget)
     for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
-        if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "^vitality;", 1, true) then
+        if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "^vitality;") then
             EffectManager.expireEffect(rTarget, nodeEffect, 0);
         end
     end
@@ -793,58 +813,6 @@ function newOnMirrorImage(rSource, rTarget, rRoll)
     oldOnMirrorImage(rSource, rTarget, rRoll);
 end
 
-
-function newHasEffect(rActor, sEffect, rTarget, bTargetedOnly, bIgnoreEffectTargets)
-    if not sEffect or not rActor then
-        return false;
-    end
-
-    --replace per-turn tag with action tag so it gets treated as such, except deletion will be intercepted
-    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
-        if DB.getValue(v, "apply", "") == "turn" then
-            DB.setValue(v, "apply", "string", "action");
-            DB.setValue(v, "onceperturn", "number", 1);
-        end
-    end
-
-    local result = oldHasEffect(rActor, sEffect, rTarget, bTargetedOnly, bIgnoreEffectTargets);
-
-    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
-        if DB.getValue(v, "onceperturn", 0) == 1 then
-            DB.setValue(v, "apply", "string", "turn");
-        end
-    end
-
-    return result;
-end
-
-function newGetEffectsByType(rActor, sEffectType, aFilter, rFilterActor, bTargetedOnly)
-    if not rActor then
-        return {};
-    end
-
-    --replace per-turn tag with action tag so it gets treated as such, except deletion will be intercepted
-    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
-        local sApply = DB.getValue(v, "apply", "");
-        if sApply == "turn" then
-            DB.setValue(v, "apply", "string", "action");
-            DB.setValue(v, "onceperturn", "number", 1);
-        else
-            DB.setValue(v, "onceperturn", "number", 0);
-        end
-    end
-
-    local results = oldGetEffectsByType(rActor, sEffectType, aFilter, rFilterActor, bTargetedOnly);
-
-    for _,v in pairs(DB.getChildren(ActorManager.getCTNode(rActor), "effects")) do
-        if DB.getValue(v, "onceperturn", 0) == 1 then
-            DB.setValue(v, "apply", "string", "turn");
-        end
-    end
-
-    return results;
-end
-
 function newNotifyExpire(varEffect, nMatch, bImmediate)
     if type(varEffect) == "databasenode" then
         if DB.getValue(varEffect, "label", ""):lower():find("^turn;") then
@@ -863,6 +831,9 @@ end
 function newProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd)
     if bProcessSpecialStart and DB.getValue(nodeEffect, "label", ""):lower():find("^turn;") then
         DB.setValue(nodeEffect, "isactive", "number", 1);
+        if DB.getValue(nodeEffect, "apply", "") == "" then
+            DB.setValue(nodeEffect, "apply", "string", "action");
+        end
     end
 
     oldProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd);
