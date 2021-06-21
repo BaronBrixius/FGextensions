@@ -152,13 +152,11 @@ function newOnEffectActorEndTurn(nodeActor, nodeEffect)
     -- Delayed Damage Pool
     local sEffectLabel = DB.getValue(nodeEffect, "label", "");
     if string.find(sEffectLabel, "Delayed:", 1, true) then
-        local nCurrPoolDamage = tonumber(string.match(sEffectLabel, "Delayed: (%d+)/%d+"));
+        local nCurrPoolDamage = tonumber(string.match(sEffectLabel, "Delayed: (%-?%d+)/%d+"));
         if nCurrPoolDamage > 0 then
-            local sDamage = "[DAMAGE] Delayed Damage Pool [TYPE: ";
-            if string.find(sEffectLabel, "nonlethal", 1, true) then
-                sDamage = sDamage .. "nonlethal";
-            else
-                sDamage = sDamage .. "untyped";
+            local sDamage = "[DAMAGE] Delayed Damage Pool [TYPE: spell";
+            if string.find(sEffectLabel, "nonlethal") or string.find(sEffectLabel, " nl") or string.find(sEffectLabel, " endur") then
+                sDamage = sDamage .. ", nonlethal";
             end
             sDamage = sDamage .. " (" .. nCurrPoolDamage ..")]";
 
@@ -166,6 +164,21 @@ function newOnEffectActorEndTurn(nodeActor, nodeEffect)
             DB.setValue(nodeEffect, "label", "string", sEffectLabel:gsub("Delayed: %d+", "Delayed: 0"));
         end
     end
+
+    -- alternate version that directly manipulates hp values rather than generating a fake onDamage instance, might need to swap to it after testing
+        --DB.setValue(nodeEffect, "label", "string", sEffectLabel:gsub("Delayed: %-?%d+", "Delayed: 0"));
+        --local nodeActor = ActorManager.getCreatureNode(rActor);
+        --
+        --if string.find(sEffectLabel, " nonlethal") or string.find(sEffectLabel, " nl") then
+        --    DB.setValue(nodeActor, "hp.nonlethal", "number", DB.getValue(nodeActor, "hp.nonlethal", 0) + nCurrPoolDamage);
+        --else
+        --    local nCurrTempHealth = DB.getValue(nodeActor, "hp.temporary", 0);
+        --    local nTempHealthToDamage = math.min(nCurrPoolDamage, nCurrTempHealth);
+        --    DB.setValue(nodeActor, "hp.temporary", "number", nCurrTempHealth - nTempHealthToDamage);
+        --
+        --    nCurrPoolDamage = nCurrPoolDamage - nTempHealthToDamage;
+        --    DB.setValue(nodeActor, "hp.wounds", "number", DB.getValue(nodeActor, "hp.wounds", 0) + nCurrPoolDamage);
+        --end
 
     --If an effect's duration is less than 1, expire it (e.g. set duration as 1.5 for it to last 1 round but expire at end of turn)
     local nDuration = DB.getValue(nodeEffect, "duration");
@@ -178,6 +191,19 @@ function newOnEffectActorEndTurn(nodeActor, nodeEffect)
 end
 
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
+    if string.match(sDamage, "%[TYPE: delayed") then    -- directly manipulate delayed damage pool. no validation, just let users go nuts
+        for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+            local sEffectLabel = DB.getValue(nodeEffect, "label", "");
+            if string.find(sEffectLabel, "^Delayed:") then
+                local nCurrPoolDamage = tonumber(string.match(sEffectLabel, "Delayed: (%d+)/%d+"));
+                local sNewEffectLabel = sEffectLabel:gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage + nTotal));
+                DB.setValue(nodeEffect, "label", "string", sNewEffectLabel);
+                break;
+            end
+        end
+        return;
+    end
+
     local nHealthBeforeAttack, nTempHealthBeforeAttack = getTotalHP(rTarget);
 
     if ActorManager35E.isCreatureType(rTarget, "undead") then
@@ -205,60 +231,6 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     end
 
     applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthBeforeAttack - nTempHealthAfterAttack, rTarget, sRollType, sDamage)
-end
-
-function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, sRollType, sDamage)
-    if string.match(sDamage, "%[TEMP%]") or nTotal == 0 then
-        return;
-    end
-
-    local rDelayedDamagePoolEffect, nCurrPoolDamage, nTotalPool;
-    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
-        local sEffectLabel = DB.getValue(nodeEffect, "label", "");
-        if string.find(sEffectLabel, "^Delayed:") then
-
-            nCurrPoolDamage, nTotalPool = string.match(sEffectLabel, "Delayed: (%d+)/(%d+)");
-            nCurrPoolDamage = tonumber(nCurrPoolDamage);
-            nTotalPool = tonumber(nTotalPool);
-            rDelayedDamagePoolEffect = nodeEffect;
-            break;
-        end
-    end
-    if not rDelayedDamagePoolEffect then
-        return;
-    end
-
-    if sRollType == "heal" then
-        nHealthLost = nHealthLost * -1;
-        if nHealthLost == nTotal or nCurrPoolDamage == 0 then
-            return;
-        end
-
-        local nOverheal = nTotal - nHealthLost;
-        local nDelayedDamageToHeal = math.min(nOverheal, tonumber(nCurrPoolDamage));
-        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %d+", "Delayed: " .. (nCurrPoolDamage - nDelayedDamageToHeal));
-        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
-    elseif sRollType == "damage" then
-        if nCurrPoolDamage == nTotalPool then
-            return;
-        end
-
-        local nodeTarget = ActorManager.getCreatureNode(rTarget);
-
-        local nHealthInPool = tonumber(nTotalPool) - tonumber(nCurrPoolDamage);
-        local nDamageToDelay = math.min(nHealthInPool, nHealthLost);
-
-        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %d+", "Delayed: " .. (nCurrPoolDamage + nDamageToDelay));
-        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
-
-        local nHealthToRestore = math.min(nHealthLost - nTempHealthLost, nDamageToDelay);
-        DB.setValue(nodeTarget, "hp.wounds", "number", DB.getValue(nodeTarget, "hp.wounds", 0) - nHealthToRestore);
-
-        nDamageToDelay = nDamageToDelay - nHealthToRestore;
-
-        local nTempHealthToRestore = math.min(nTempHealthLost, nDamageToDelay);
-        DB.setValue(nodeTarget, "hp.temporary", "number", DB.getValue(nodeTarget, "hp.temporary", 0) + nTempHealthToRestore);
-    end
 end
 
 function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
@@ -334,6 +306,62 @@ function applyTempHPChanges(nTotal, rTarget, sDamage)
     end
     return nNewTotal;
 end
+
+
+function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, sRollType, sDamage)
+    if string.match(sDamage, "%[TEMP%]") or nTotal == 0 then
+        return;
+    end
+
+    local rDelayedDamagePoolEffect, nCurrPoolDamage, nTotalPool;
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        local sEffectLabel = DB.getValue(nodeEffect, "label", "");
+        if string.find(sEffectLabel, "^Delayed:") then
+
+            nCurrPoolDamage, nTotalPool = string.match(sEffectLabel, "Delayed: (%-?%d+)/(%d+)");
+            nCurrPoolDamage = tonumber(nCurrPoolDamage);
+            nTotalPool = tonumber(nTotalPool);
+            rDelayedDamagePoolEffect = nodeEffect;
+            break;
+        end
+    end
+    if not rDelayedDamagePoolEffect then
+        return;
+    end
+
+    if sRollType == "heal" then
+        nHealthLost = nHealthLost * -1;
+        if nHealthLost == nTotal or nCurrPoolDamage == 0 then
+            return;
+        end
+
+        local nOverheal = nTotal - nHealthLost;
+        local nDelayedDamageToHeal = math.min(nOverheal, tonumber(nCurrPoolDamage));
+        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage - nDelayedDamageToHeal));
+        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
+    elseif sRollType == "damage" then
+        if nCurrPoolDamage == nTotalPool then
+            return;
+        end
+
+        local nodeTarget = ActorManager.getCreatureNode(rTarget);
+
+        local nHealthInPool = tonumber(nTotalPool) - tonumber(nCurrPoolDamage);
+        local nDamageToDelay = math.min(nHealthInPool, nHealthLost);
+
+        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage + nDamageToDelay));
+        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
+
+        local nHealthToRestore = math.min(nHealthLost - nTempHealthLost, nDamageToDelay);
+        DB.setValue(nodeTarget, "hp.wounds", "number", DB.getValue(nodeTarget, "hp.wounds", 0) - nHealthToRestore);
+
+        nDamageToDelay = nDamageToDelay - nHealthToRestore;
+
+        local nTempHealthToRestore = math.min(nTempHealthLost, nDamageToDelay);
+        DB.setValue(nodeTarget, "hp.temporary", "number", DB.getValue(nodeTarget, "hp.temporary", 0) + nTempHealthToRestore);
+    end
+end
+
 
 function newGetSpellAction(rActor, nodeAction, sSubRoll)
     local rAction = SpellManager.getSpellAction(rActor, nodeAction, sSubRoll);
