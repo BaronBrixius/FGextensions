@@ -150,20 +150,20 @@ function newOnEffectActorEndTurn(nodeActor, nodeEffect)
     end
 
     -- Delayed Damage Pool
-    local sEffectLabel = DB.getValue(nodeEffect, "label", ""):lower();
-    if string.find(sEffectLabel, "delayed:", 1, true) then
-        local nCurrDamage = tonumber(string.match(sEffectLabel, "delayed: (%d+)/%d+"));
-        if nCurrDamage > 0 then
+    local sEffectLabel = DB.getValue(nodeEffect, "label", "");
+    if string.find(sEffectLabel, "Delayed:", 1, true) then
+        local nCurrPoolDamage = tonumber(string.match(sEffectLabel, "Delayed: (%d+)/%d+"));
+        if nCurrPoolDamage > 0 then
             local sDamage = "[DAMAGE] Delayed Damage Pool [TYPE: ";
             if string.find(sEffectLabel, "nonlethal", 1, true) then
                 sDamage = sDamage .. "nonlethal";
             else
                 sDamage = sDamage .. "untyped";
             end
-            sDamage = sDamage .. " (" .. nCurrDamage ..")]";
+            sDamage = sDamage .. " (" .. nCurrPoolDamage ..")]";
 
-            oldApplyDamage(nodeActor, nodeActor, false, "damage", sDamage, nCurrDamage);
-            DB.setValue(nodeEffect, "label", "string", sEffectLabel:gsub("delayed: %d+", "Delayed: 0"));
+            oldApplyDamage(nodeActor, nodeActor, false, "damage", sDamage, nCurrPoolDamage);
+            DB.setValue(nodeEffect, "label", "string", sEffectLabel:gsub("Delayed: %d+", "Delayed: 0"));
         end
     end
 
@@ -178,8 +178,7 @@ function newOnEffectActorEndTurn(nodeActor, nodeEffect)
 end
 
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
-    Debug.chat(sRollType, sDamage)
-    local nHealthBeforeAttack = getTotalHP(rTarget);
+    local nHealthBeforeAttack, nTempHealthBeforeAttack = getTotalHP(rTarget);
 
     if ActorManager35E.isCreatureType(rTarget, "undead") then
         sRollType, sDamage, nTotal = applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
@@ -187,11 +186,10 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
 
     nTotal = applyTempHPChanges(nTotal, rTarget, sDamage)
 
-    nTotal = applyDelayedDamagePool(nTotal, rTarget, sDamage)
-
     oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
 
-    local nHealthLost = nHealthBeforeAttack - getTotalHP(rTarget);
+    local nHealthAfterAttack, nTempHealthAfterAttack = getTotalHP(rTarget);
+    local nHealthLost = (nHealthBeforeAttack + nTempHealthBeforeAttack) - (nHealthAfterAttack + nTempHealthAfterAttack);
     if nHealthLost > 0 then
         if string.find(sDamage, "Ongoing", 1, true) then
             --todo this isn't supposed to roll if effect just expired
@@ -205,10 +203,62 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
             forceConcentrationCheck(rTarget, rEffect, nHealthLost)
         end
     end
+
+    applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthBeforeAttack - nTempHealthAfterAttack, rTarget, sRollType, sDamage)
 end
 
-function applyDelayedDamagePool(nTotal, rTarget, sDamage)
-    return nTotal
+function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, sRollType, sDamage)
+    if string.match(sDamage, "%[TEMP%]") or nTotal == 0 then
+        return;
+    end
+
+    local rDelayedDamagePoolEffect, nCurrPoolDamage, nTotalPool;
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        local sEffectLabel = DB.getValue(nodeEffect, "label", "");
+        if string.find(sEffectLabel, "^Delayed:") then
+
+            nCurrPoolDamage, nTotalPool = string.match(sEffectLabel, "Delayed: (%d+)/(%d+)");
+            nCurrPoolDamage = tonumber(nCurrPoolDamage);
+            nTotalPool = tonumber(nTotalPool);
+            rDelayedDamagePoolEffect = nodeEffect;
+            break;
+        end
+    end
+    if not rDelayedDamagePoolEffect then
+        return;
+    end
+
+    if sRollType == "heal" then
+        nHealthLost = nHealthLost * -1;
+        if nHealthLost == nTotal or nCurrPoolDamage == 0 then
+            return;
+        end
+
+        local nOverheal = nTotal - nHealthLost;
+        local nDelayedDamageToHeal = math.min(nOverheal, tonumber(nCurrPoolDamage));
+        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %d+", "Delayed: " .. (nCurrPoolDamage - nDelayedDamageToHeal));
+        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
+    elseif sRollType == "damage" then
+        if nCurrPoolDamage == nTotalPool then
+            return;
+        end
+
+        local nodeTarget = ActorManager.getCreatureNode(rTarget);
+
+        local nHealthInPool = tonumber(nTotalPool) - tonumber(nCurrPoolDamage);
+        local nDamageToDelay = math.min(nHealthInPool, nHealthLost);
+
+        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %d+", "Delayed: " .. (nCurrPoolDamage + nDamageToDelay));
+        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
+
+        local nHealthToRestore = math.min(nHealthLost - nTempHealthLost, nDamageToDelay);
+        DB.setValue(nodeTarget, "hp.wounds", "number", DB.getValue(nodeTarget, "hp.wounds", 0) - nHealthToRestore);
+
+        nDamageToDelay = nDamageToDelay - nHealthToRestore;
+
+        local nTempHealthToRestore = math.min(nTempHealthLost, nDamageToDelay);
+        DB.setValue(nodeTarget, "hp.temporary", "number", DB.getValue(nodeTarget, "hp.temporary", 0) + nTempHealthToRestore);
+    end
 end
 
 function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
@@ -251,7 +301,7 @@ end
 
 function getTotalHP(rActor) --todo make this work for NPCs if I care
     local nodeTarget = ActorManager.getCreatureNode(rActor);
-    return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0) + DB.getValue(nodeTarget, "hp.temporary", 0);
+    return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0), DB.getValue(nodeTarget, "hp.temporary", 0);
 end
 
 function applyTempHPChanges(nTotal, rTarget, sDamage)
