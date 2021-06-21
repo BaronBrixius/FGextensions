@@ -3,7 +3,7 @@
 local oldOnSpellAction;
 local oldGetActionAttackText;
 local oldApplyDamage;
-local oldOnEffectEndTurn;
+local oldOnEffectActorEndTurn;
 local oldCustomOnEffectAddIgnoreCheck;
 local oldApplyAttack;
 local oldClearCritState;
@@ -33,8 +33,8 @@ function onInit()
     SpellManager.getActionAttackText = getActionDemoralizeText;
 
     -- Effect Expires At End Of Turn
-    oldOnEffectEndTurn = EffectManager.fCustomOnEffectEndTurn
-    EffectManager.setCustomOnEffectEndTurn(newOnEffectEndTurn)
+    oldOnEffectActorEndTurn = EffectManager.fCustomOnEffectActorEndTurn
+    EffectManager.setCustomOnEffectActorEndTurn(newOnEffectActorEndTurn)
 
     -- Use Target Initiative For Effect
     oldCustomOnEffectAddIgnoreCheck = EffectManager.fCustomOnEffectAddIgnoreCheck;
@@ -144,9 +144,27 @@ function newCompareFields(node1, node2, bTop)
     return oldCompareFields(node1, node2, bTop);
 end
 
-function newOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
-    if oldOnEffectEndTurn and oldOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit) then
+function newOnEffectActorEndTurn(nodeActor, nodeEffect)
+    if oldOnEffectActorEndTurn and oldOnEffectActorEndTurn(nodeActor, nodeEffect) then
         return true;
+    end
+
+    -- Delayed Damage Pool
+    local sEffectLabel = DB.getValue(nodeEffect, "label", ""):lower();
+    if string.find(sEffectLabel, "delayed:", 1, true) then
+        local nCurrDamage = tonumber(string.match(sEffectLabel, "delayed: (%d+)/%d+"));
+        if nCurrDamage > 0 then
+            local sDamage = "[DAMAGE] Delayed Damage Pool [TYPE: ";
+            if string.find(sEffectLabel, "nonlethal", 1, true) then
+                sDamage = sDamage .. "nonlethal";
+            else
+                sDamage = sDamage .. "untyped";
+            end
+            sDamage = sDamage .. " (" .. nCurrDamage ..")]";
+
+            oldApplyDamage(nodeActor, nodeActor, false, "damage", sDamage, nCurrDamage);
+            DB.setValue(nodeEffect, "label", "string", sEffectLabel:gsub("delayed: %d+", "Delayed: 0"));
+        end
     end
 
     --If an effect's duration is less than 1, expire it (e.g. set duration as 1.5 for it to last 1 round but expire at end of turn)
@@ -160,6 +178,7 @@ function newOnEffectEndTurn(nodeActor, nodeEffect, nCurrentInit, nNewInit)
 end
 
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
+    Debug.chat(sRollType, sDamage)
     local nHealthBeforeAttack = getTotalHP(rTarget);
 
     if ActorManager35E.isCreatureType(rTarget, "undead") then
@@ -167,6 +186,8 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
     end
 
     nTotal = applyTempHPChanges(nTotal, rTarget, sDamage)
+
+    nTotal = applyDelayedDamagePool(nTotal, rTarget, sDamage)
 
     oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
 
@@ -184,6 +205,10 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
             forceConcentrationCheck(rTarget, rEffect, nHealthLost)
         end
     end
+end
+
+function applyDelayedDamagePool(nTotal, rTarget, sDamage)
+    return nTotal
 end
 
 function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
@@ -831,9 +856,6 @@ end
 function newProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd)
     if bProcessSpecialStart and DB.getValue(nodeEffect, "label", ""):lower():find("^turn;") then
         DB.setValue(nodeEffect, "isactive", "number", 1);
-        if DB.getValue(nodeEffect, "apply", "") == "" then
-            DB.setValue(nodeEffect, "apply", "string", "action");
-        end
     end
 
     oldProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd);
