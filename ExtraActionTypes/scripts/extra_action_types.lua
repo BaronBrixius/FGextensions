@@ -16,6 +16,7 @@ local oldOnMissChance;
 local oldOnMirrorImage;
 local oldNotifyExpire;
 local oldProcessEffect;
+local oldOnImageInit;
 
 function onInit()
     -- Demoralize
@@ -99,8 +100,13 @@ function onInit()
     oldProcessEffect = EffectManager.processEffect;
     EffectManager.processEffect = newProcessEffect;
 
-    --Auto Aura Application
+    -- Auto Aura Application
     EffectManager.setCustomOnEffectAddEnd(applyNewAuraToOthers);
+
+    -- Click On Map Clears Targets
+    OptionsManager.registerOption2("CLICKMAPREMOVESTARGETS", true, "option_header_client", "option_label_CLICKMAPREMOVESTARGETS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
+    oldOnImageInit = ImageManager.onImageInit;
+    ImageManager.onImageInit = newOnImageInit;
 end
 
 function applyNewAuraToOthers(nodeTargetEffect, rNewEffect)
@@ -937,4 +943,33 @@ function newProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProces
     end
 
     oldProcessEffect(nodeActor, nodeEffect, nCurrentInit, nNewInit, bProcessSpecialStart, bProcessSpecialEnd);
+end
+
+
+local tokenHovered = false;
+
+function newOnImageInit(cImage)
+    oldOnImageInit(cImage)
+
+    if OptionsManager.getOption("CLICKMAPREMOVESTARGETS"):lower() == "off" then
+        Token.onHover = nil;
+        cImage.onHoverUpdate = nil;
+        return;
+    end
+
+    Token.onHover = function(tokenMap, bOver)
+        tokenHovered = bOver;
+    end
+
+    -- an imagecontrol is unable to receive real mouse click events, a hoverUpdate event with zero movement is assumed to have been a click instead
+    cImage.onHoverUpdate = function(x, y)
+        if cImage.getCursorMode() == nil then   -- only need to look for these events in "normal" cursor mode (e.g. not drawing/mask modes)
+            if x == cImage.lastX and y == cImage.lastY and not Input.isControlPressed() and not tokenHovered then
+                cImage.clearSelectedTokens();
+            else
+                cImage.lastX = x;
+                cImage.lastY = y;
+            end
+        end
+    end
 end

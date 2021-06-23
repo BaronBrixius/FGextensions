@@ -7,4 +7,5 @@
 
     <string name="option_label_AUTOIDENTIFY">Party: Auto-identify Party Sheet Items</string>
     <string name="option_label_COMBOHOTKEYS">Hotkeys: Combo Actions</string>
+    <string name="option_label_CLICKMAPREMOVESTARGETS">Target: Remove all on map click</string>
 </root>
