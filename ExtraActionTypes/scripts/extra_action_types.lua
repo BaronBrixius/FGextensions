@@ -964,7 +964,7 @@ function newOnImageInit(cImage)
     -- an imagecontrol is unable to receive real mouse click events, a hoverUpdate event with zero movement is assumed to have been a click instead
     cImage.onHoverUpdate = function(x, y)
         if cImage.getCursorMode() == nil then   -- only need to look for these events in "normal" cursor mode (e.g. not drawing/mask modes)
-            if x == cImage.lastX and y == cImage.lastY and not Input.isControlPressed() and not tokenHovered then
+            if x == cImage.lastX and y == cImage.lastY and not Input.isControlPressed() and not Input.isShiftPressed() and not Input.isAltPressed() and not tokenHovered then
                 cImage.clearSelectedTokens();
             else
                 cImage.lastX = x;
