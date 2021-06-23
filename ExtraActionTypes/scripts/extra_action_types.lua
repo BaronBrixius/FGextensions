@@ -104,9 +104,11 @@ function onInit()
     EffectManager.setCustomOnEffectAddEnd(applyNewAuraToOthers);
 
     -- Click On Map Clears Targets
-    OptionsManager.registerOption2("CLICKMAPREMOVESTARGETS", true, "option_header_client", "option_label_CLICKMAPREMOVESTARGETS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
-    oldOnImageInit = ImageManager.onImageInit;
-    ImageManager.onImageInit = newOnImageInit;
+    if UtilityManager.isClientFGU() then
+        OptionsManager.registerOption2("CLICKMAPREMOVESTARGETS", true, "option_header_client", "option_label_CLICKMAPREMOVESTARGETS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "off" });
+        oldOnImageInit = ImageManager.onImageInit;
+        ImageManager.onImageInit = newOnImageInit;
+    end
 end
 
 function applyNewAuraToOthers(nodeTargetEffect, rNewEffect)
