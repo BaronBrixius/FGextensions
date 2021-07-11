@@ -37,11 +37,9 @@
         <sheetdata>
             <button_stringcycler name="meta">
                 <parameters>
-                    <defaultlabelres>dash</defaultlabelres>
-                    <labelsres>
-                        power_label_metamagicempower|power_label_metamagicmaximize|power_label_metamagicinvigorate|power_label_metamagicstacking
-                    </labelsres>
-                    <values>empower|maximize|invigorate|stacking</values>
+<!--                    <defaultlabelres>dash</defaultlabelres>-->
+                    <labelsres>power_label_metamagicempower|power_label_metamagicmaximize|power_label_metamagicinvigorate|power_label_metamagicpainkiller|power_label_metamagicstacking</labelsres>
+                    <values>empower|maximize|invigorate|painkiller|stacking</values>
                 </parameters>
             </button_stringcycler>
         </sheetdata>

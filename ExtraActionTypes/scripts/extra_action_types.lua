@@ -218,7 +218,9 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
         sRollType, sDamage, nTotal = applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
     end
 
-    nTotal = applyTempHPChanges(nTotal, rTarget, sDamage)
+    if sDamage:match("%[TEMP%]") then
+        nTotal = applyTempHPChanges(nTotal, rTarget, sDamage)
+    end
 
     oldApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal);
 
@@ -281,15 +283,11 @@ end
 
 function getTotalHP(rActor) --todo make this work for NPCs if I care
     local nodeTarget = ActorManager.getCreatureNode(rActor);
-    return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0), DB.getValue(nodeTarget, "hp.temporary", 0);
+    return DB.getValue(nodeTarget, "hp.total", 0) - DB.getValue(nodeTarget, "hp.wounds", 0),
+           DB.getValue(nodeTarget, "hp.temporary", 0);
 end
 
 function applyTempHPChanges(nTotal, rTarget, sDamage)
-    if not string.match(sDamage, "%[TEMP%]") then
-        return nTotal;
-    end
-
-    local nNewTotal = nTotal;
     local sTargetType, nodeTarget = ActorManager.getTypeAndNode(rTarget);
     if sTargetType ~= "pc" and sTargetType ~= "ct" then
         return ;
@@ -304,15 +302,19 @@ function applyTempHPChanges(nTotal, rTarget, sDamage)
         nWounds = DB.getValue(nodeTarget, "wounds", 0);
     end
 
-    --Invigorate cannot raise a target's total (temp + current) hit points above their max hit points
-    if string.match(sDamage, "%[INVIGORATE%]") then
-        nNewTotal = math.min(nNewTotal, nWounds);
+    if sDamage:match("%[PAINKILLER%]") then --painkiller heals an amount of nonlethal equal to the max invigorate value
+        DB.setValue(nodeTarget, "hp.nonlethal", "number", math.max(0, DB.getValue(nodeTarget, "hp.nonlethal", 0) - nTotal));
     end
 
-    if not string.match(sDamage, "%[STACKING%]") then
-        nNewTotal = math.max(nNewTotal - nTempHP, 0);
+    --Invigorate cannot raise a target's total (temp + current) hit points above their max hit points
+    if sDamage:find("[INVIGORATE]", 1, 1) or sDamage:find("[PAINKILLER]", 1, 1) then
+        nTotal = math.min(nTotal, nWounds);
     end
-    return nNewTotal;
+
+    if not sDamage:match("%[STACKING%]") then
+        nTotal = math.max(nTotal - nTempHP, 0);
+    end
+    return nTotal;
 end
 
 
@@ -347,7 +349,7 @@ function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, s
         local nDelayedDamageToHeal = math.min(nOverheal, tonumber(nCurrPoolDamage));
         local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage - nDelayedDamageToHeal));
         DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
-    elseif sRollType == "damage" then
+    elseif sRollType:find("damage")  then
         if nCurrPoolDamage == nTotalPool then
             return;
         end
@@ -429,6 +431,8 @@ function getHealRollTempHPEffects(rActor, rAction)
     if rAction.type == "heal" and rAction.subtype == "temp" and rAction.meta then
         if rAction.meta == "invigorate" then
             rRoll.sDesc = rRoll.sDesc .. " [INVIGORATE]";
+        elseif rAction.meta == "painkiller" then
+            rRoll.sDesc = rRoll.sDesc .. " [PAINKILLER]";
         elseif rAction.meta == "stacking" then
             rRoll.sDesc = rRoll.sDesc .. " [STACKING]";
         end

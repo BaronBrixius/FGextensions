@@ -2,6 +2,7 @@
 
 <root>
     <string name="power_label_metamagicinvigorate">Invigorate</string>
+    <string name="power_label_metamagicpainkiller">Painkiller</string>
     <string name="power_label_metamagicstacking">Stacking</string>
     <string name="power_label_demoralize">Demoralize</string>
 
