@@ -4,9 +4,9 @@
     <string name="power_label_metamagicinvigorate">Invigorate</string>
     <string name="power_label_metamagicpainkiller">Painkiller</string>
     <string name="power_label_metamagicstacking">Stacking</string>
-    <string name="power_label_demoralize">Demoralize</string>
 
     <string name="option_label_AUTOIDENTIFY">Party: Auto-identify Party Sheet Items</string>
     <string name="option_label_COMBOHOTKEYS">Hotkeys: Combo Actions</string>
     <string name="option_label_CLICKMAPREMOVESTARGETS">Target: Remove all on map click</string>
+    <string name="option_label_TARGETEDSKILLS">Skills: Roll targeted skill checks</string>
 </root>

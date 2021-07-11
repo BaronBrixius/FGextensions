@@ -1,7 +1,4 @@
--- todo move Demoralize to its own action type (maybe a whole skill action type?)
-
-local oldOnSpellAction;
-local oldGetActionAttackText;
+local oldGetSpellAction;
 local oldApplyDamage;
 local oldOnEffectActorEndTurn;
 local oldCustomOnEffectAddIgnoreCheck;
@@ -20,18 +17,16 @@ local oldOnImageInit;
 
 function onInit()
     -- Demoralize
-    ActionsManager.registerTargetingHandler("demoralize", onSkillTargeting);
-    ActionsManager.registerModHandler("demoralize", ActionSkill.modSkill);
-    ActionsManager.registerResultHandler("demoralize", onDemoralizeRoll);
+    OptionsManager.registerOption2("TARGETEDSKILLS", true, "option_header_client", "option_label_TARGETEDSKILLS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "on" });
+    ActionsManager.registerTargetingHandler("skill", onSkillTargeting);
+    ActionsManager.registerResultHandler("skill", onSkillRoll);
 
-    GameSystem.actions["demoralize"] = { sTargeting = "all", bUseModStack = true };
-    table.insert(GameSystem.targetactions, "demoralize");
+    GameSystem.actions["skill"] = { sTargeting = "all", bUseModStack = true };
+    table.insert(GameSystem.targetactions, "skill");
 
-    oldOnSpellAction = SpellManager.onSpellAction;
-    SpellManager.onSpellAction = newOnSpellActionDemoralize;
-
-    oldGetActionAttackText = SpellManager.getActionAttackText;
-    SpellManager.getActionAttackText = getActionDemoralizeText;
+    --Spell Action Scaling
+    oldGetSpellAction = SpellManager.getSpellAction;
+    SpellManager.getSpellAction = newGetSpellAction;
 
     -- Effect Expires At End Of Turn
     oldOnEffectActorEndTurn = EffectManager.fCustomOnEffectActorEndTurn
@@ -317,7 +312,6 @@ function applyTempHPChanges(nTotal, rTarget, sDamage)
     return nTotal;
 end
 
-
 function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, sRollType, sDamage)
     if string.match(sDamage, "%[TEMP%]") or nTotal == 0 then
         return;
@@ -372,46 +366,11 @@ function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, s
     end
 end
 
-
 function newGetSpellAction(rActor, nodeAction, sSubRoll)
-    local rAction = SpellManager.getSpellAction(rActor, nodeAction, sSubRoll);
-    if rAction.type == "cast" and DB.getValue(nodeAction, "atktype", "") == "demoralize" then
-        applyDemoralizeAction(rActor, rAction);
-    else
-        applyAlternateSpellAttackScaling(rActor, rAction, nodeAction)
-    end
+    local rAction = oldGetSpellAction(rActor, nodeAction, sSubRoll);
 
-    return rAction;
-end
-
-function applyDemoralizeAction(rActor, rAction)
-    rAction.demo = true;
-    rAction.range = nil;
-
-    local sNodeType, nodeActor = ActorManager.getTypeAndNode(rActor);
-    if not nodeActor then
-        return;
-    end
-    if sNodeType == "pc" then
-        rAction.modifier = CharManager.getSkillValue(rActor, "Intimidate");
-    elseif ActorManager.isRecordType(rActor, "npc") then
-        local sSkills = DB.getValue(nodeActor, "skills", "");
-        local aSkillClauses = StringManager.split(sSkills, ",;\r", true);
-        for i = 1, #aSkillClauses do
-            local nStarts, nEnds, sLabel, sSign, sMod = string.find(aSkillClauses[i], "([%w%s\(\)]*[%w\(\)]+)%s*([%+%-�]?)(%d*)");
-            if nStarts and string.lower(sLabel) == "intimidate" and sMod ~= "" then
-                rAction.modifier = tonumber(sMod) or 0;
-                if sSign == "-" or sSign == "�" then
-                    rAction.modifier = -rAction.modifier;
-                end
-            end
-        end
-    end
-end
-
-function applyAlternateSpellAttackScaling(rActor, rAction, nodeAction)
     if rAction.type ~= "cast" then
-        return ;
+        return rAction;
     end
 
     local sBase = DB.getValue(nodeAction, "attackbabreplace", "");
@@ -420,10 +379,12 @@ function applyAlternateSpellAttackScaling(rActor, rAction, nodeAction)
     end
 
     local sStat = DB.getValue(nodeAction, "attackstatreplace", "");
-    if sStat ~= "" and sStat ~= rAction.stat then
+    if sStat ~= "" and rAction.stat ~= sStat then
         rAction.modifier = rAction.modifier - ActorManager35E.getAbilityBonus(rActor, rAction.stat) + ActorManager35E.getAbilityBonus(rActor, sStat);
         rAction.stat = sStat;
     end
+
+    return rAction;
 end
 
 function getHealRollTempHPEffects(rActor, rAction)
@@ -440,83 +401,31 @@ function getHealRollTempHPEffects(rActor, rAction)
     return rRoll;
 end
 
-function newOnSpellActionDemoralize(draginfo, nodeAction, sSubRoll)
-    if not nodeAction then
-        return ;
-    end
-    local rActor = ActorManager.getActor("", nodeAction.getChild("........."));
-    if not rActor then
-        return ;
-    end
+local skillTargetDCs = {
+    bluff = {beatBy = true, dcCalc = function(rActor) return 10 + ActorManager35E.getAbilityScore(rActor, "bab") + ActorManager35E.getAbilityBonus(rActor, "wisdom") end},
+    intimidate = {beatBy = true, dcCalc = function(rActor) return 10 + ActorManager35E.getAbilityScore(rActor, "lev") + ActorManager35E.getAbilityBonus(rActor, "wisdom") end},
+    heal = {beatBy = false, dcCalc = function() return 15 end}
+}
 
-    local rAction = newGetSpellAction(rActor, nodeAction, sSubRoll);
-
-    local rRolls = {};
-    if rAction.type == "cast" then
-        if not rAction.subtype then
-            table.insert(rRolls, ActionSpell.getSpellCastRoll(rActor, rAction));
-        end
-
-        if not rAction.subtype or rAction.subtype == "atk" then
-            if rAction.range then
-                table.insert(rRolls, ActionAttack.getRoll(rActor, rAction));
-            elseif rAction.demo then
-                local rRoll = ActionSkill.getRoll(rActor, "Intimidate", rAction.modifier);
-                rRoll.sType = "demoralize";
-                table.insert(rRolls, rRoll);
-            end
-        end
-
-        if not rAction.subtype or rAction.subtype == "clc" then
-            local rRoll = ActionSpell.getCLCRoll(rActor, rAction);
-            if not rAction.subtype then
-                rRoll.sType = "castclc";
-                rRoll.aDice = {};
-            end
-            table.insert(rRolls, rRoll);
-        end
-
-        if not rAction.subtype or rAction.subtype == "save" then
-            if rAction.save and rAction.save ~= "" then
-                local rRoll = ActionSpell.getSaveVsRoll(rActor, rAction);
-                if not rAction.subtype then
-                    rRoll.sType = "castsave";
-                end
-                table.insert(rRolls, rRoll);
-            end
-        end
-
-    elseif rAction.type == "damage" then
-        local rRoll = ActionDamage.getRoll(rActor, rAction);
-        if rAction.bSpellDamage then
-            rRoll.sType = "spdamage";
-        else
-            rRoll.sType = "damage";
-        end
-
-        table.insert(rRolls, rRoll);
-
-    elseif rAction.type == "heal" then
-        table.insert(rRolls, getHealRollTempHPEffects(rActor, rAction));
-
-    elseif rAction.type == "effect" then
-        local rRoll;
-        rRoll = ActionEffect.getRoll(draginfo, rActor, rAction);
-        if rRoll then
-            table.insert(rRolls, rRoll);
-        end
+function onSkillTargeting(rSource, aTargeting, rRolls)
+    if OptionsManager.isOption("TARGETEDSKILLS", "off") then
+        return nil;
     end
 
-    if #rRolls > 0 then
-        ActionsManager.performMultiAction(draginfo, rActor, rRolls[1].sType, rRolls);
+    local sSkillName = rRolls[1].sDesc:match("%[SKILL%] ([^%s]+) "):lower()
+    if not skillTargetDCs[sSkillName] then
+        return nil;
     end
+
+    return ActionAttack.onTargeting(rSource, aTargeting, rRolls);   --targeting logic is the same for skills as for attacks
 end
 
-function onDemoralizeRoll(rSource, rTarget, rRoll)
+function onSkillRoll(rSource, rTarget, rRoll)
     local rMessage = ActionsManager.createActionMessage(rSource, rRoll);
     rMessage.text = string.gsub(rMessage.text, " %[MOD:[^]]*%]", "");
 
     local nTotal = ActionsManager.total(rRoll);
+    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+) "):lower()
 
     if rRoll.nTarget then
         local nTargetDC = tonumber(rRoll.nTarget) or 0;
@@ -528,11 +437,18 @@ function onDemoralizeRoll(rSource, rTarget, rRoll)
             rMessage.text = rMessage.text .. " [FAILURE]";
         end
     elseif rTarget then
-        local nTargetDC = 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom");
+        local nTargetDC = skillTargetDCs[sSkillName].dcCalc(rTarget)
+        if sSkillName == "heal" and not useMedicalTraining(rSource, rTarget, nTotal - nTargetDC + 1) then   --if source can't use medical training, then no need to continue with targeting
+            Comm.deliverChatMessage(rMessage);
+            return;
+        end
 
         rMessage.text = rMessage.text .. " [at " .. ActorManager.getDisplayName(rTarget) .. "]";
         if nTotal >= nTargetDC then
-            rMessage.text = rMessage.text .. " [SUCCESS] BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+";
+            rMessage.text = rMessage.text .. " [SUCCESS]";
+            if skillTargetDCs[sSkillName].beatBy then
+                rMessage.text = rMessage.text .. " BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+";
+            end
         else
             rMessage.text = rMessage.text .. " [FAILURE]";
         end
@@ -540,36 +456,46 @@ function onDemoralizeRoll(rSource, rTarget, rRoll)
     Comm.deliverChatMessage(rMessage);
 end
 
-function getActionDemoralizeText(nodeAction)
-    if DB.getValue(nodeAction, "atktype", "") == "demoralize" then
-        return Interface.getString("power_label_demoralize");
-    else
-        return oldGetActionAttackText(nodeAction);
+function useMedicalTraining(rSource, rTarget, nTotal)
+    local sNodeType, nodeActor = ActorManager.getTypeAndNode(rSource);
+    if sNodeType ~= "pc" then
+        return false;
     end
-end
 
-function onSkillTargeting(rSource, aTargeting, rRolls)
-    local bRemoveOnMiss = false;
-    local sOptRMMT = OptionsManager.getOption("RMMT");
-    if sOptRMMT == "on" then
-        bRemoveOnMiss = true;
-    elseif sOptRMMT == "multi" then
-        local aTargets = {};
-        for _, vTargetGroup in ipairs(aTargeting) do
-            for _, vTarget in ipairs(vTargetGroup) do
-                table.insert(aTargets, vTarget);
+    local scholarLevel = 0;
+    for _,class in pairs(nodeActor.getChild("classes").getChildren()) do
+        if class.getChild("name").getValue():lower():find("scholar", 1, 1) then --fixme better way to identify valid users if/when it comes up in another campaign
+            scholarLevel = class.getChild("level").getValue();
+            break;
+        end
+    end
+    if scholarLevel == 0 then
+        return false;
+    elseif scholarLevel >= 9 then
+        nTotal = nTotal * 3;
+    elseif scholarLevel >= 5 then
+        nTotal = nTotal * 2;
+    end
+
+    local nTimesUsed = 0;
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        if DB.getValue(nodeEffect, "source_name", nil) == rSource.sCTNode then
+            nTimesUsed = tonumber(string.match(DB.getValue(nodeEffect, "label", ""), "(%d+) Healer's Kit Use")) or 0;
+            if nTimesUsed > 0 then
+                break;
             end
         end
-        bRemoveOnMiss = (#aTargets > 1);
+    end
+    if nTimesUsed >= math.max(DB.getValue(nodeActor, "abilities.intelligence.bonusmodifier", 0), 1) then
+        ChatManager.Message("Healer's Kit Use [TARGET HAS BEEN HEALED TOO MANY TIMES.]", true, rSource);
+        return false;
     end
 
-    if bRemoveOnMiss then
-        for _, vRoll in ipairs(rRolls) do
-            vRoll.bRemoveOnMiss = "true";
-        end
+    EffectManager.notifyApply({ sName = "STACK: Healer's Kit Use", sSource = rSource.sCTNode or "" , nDuration = 14400}, ActorManager.getCTNodeName(rTarget));
+    if nTotal > 0 then
+        newApplyDamage(rSource, rTarget, false, "heal", "[HEAL] Healer's Kit Use", nTotal)
     end
-
-    return aTargeting;
+    return true;
 end
 
 function customOnEffectAddIgnoreCheckTargetInit(nodeCT, rNewEffect)

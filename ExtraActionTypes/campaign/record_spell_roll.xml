@@ -12,9 +12,9 @@
                 <parameters>
                     <defaultlabelres>power_label_atktypenone</defaultlabelres>
                     <labelsres>
-                        power_label_atktypemelee|power_label_atktyperanged|power_label_atktypemtouch|power_label_atktypertouch|power_label_atktypegrapple|power_label_demoralize
+                        power_label_atktypemelee|power_label_atktyperanged|power_label_atktypemtouch|power_label_atktypertouch|power_label_atktypegrapple
                     </labelsres>
-                    <values>melee|ranged|mtouch|rtouch|cm|demoralize</values>
+                    <values>melee|ranged|mtouch|rtouch|cm</values>
                 </parameters>
             </button_stringcycler>
             <cycler_ability name="attackbabreplace">
@@ -37,7 +37,6 @@
         <sheetdata>
             <button_stringcycler name="meta">
                 <parameters>
-<!--                    <defaultlabelres>dash</defaultlabelres>-->
                     <labelsres>power_label_metamagicempower|power_label_metamagicmaximize|power_label_metamagicinvigorate|power_label_metamagicpainkiller|power_label_metamagicstacking</labelsres>
                     <values>empower|maximize|invigorate|painkiller|stacking</values>
                 </parameters>
