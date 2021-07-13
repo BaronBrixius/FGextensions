@@ -412,8 +412,8 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
         return nil;
     end
 
-    local sSkillName = rRolls[1].sDesc:match("%[SKILL%] ([^%s]+)")
-    if not (sSkillName and skillTargetDCs[sSkillName:lower()]) then
+    local sSkillName = rRolls[1].sDesc:match("%[SKILL%] ([^%s]+)"):lower()
+    if not skillTargetDCs[sSkillName] then
         return nil;
     end
 
