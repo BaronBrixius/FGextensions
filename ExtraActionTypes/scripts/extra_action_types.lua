@@ -412,8 +412,8 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
         return nil;
     end
 
-    local sSkillName = rRolls[1].sDesc:match("%[SKILL%] ([^%s]+) "):lower()
-    if not skillTargetDCs[sSkillName] then
+    local sSkillName = rRolls[1].sDesc:match("%[SKILL%] ([^%s]+)")
+    if not (sSkillName and skillTargetDCs[sSkillName:lower()]) then
         return nil;
     end
 
@@ -425,7 +425,7 @@ function onSkillRoll(rSource, rTarget, rRoll)
     rMessage.text = string.gsub(rMessage.text, " %[MOD:[^]]*%]", "");
 
     local nTotal = ActionsManager.total(rRoll);
-    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+) "):lower()
+    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower()
 
     if rRoll.nTarget then
         local nTargetDC = tonumber(rRoll.nTarget) or 0;
