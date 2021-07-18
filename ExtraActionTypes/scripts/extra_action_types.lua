@@ -1,11 +1,4 @@
---Skills: stealth, acrobatics vs move through space
---Skill re-drops "chain" messages when
---Maybe add a little explanation when dropping skill (e.g. "demoralize"/"bluff"/"move through threatened square")
---TODO remove negative limit on spell point usage
---TODO Momentum??
---TODO Choose initiative
-
-local OOB_MSGTYPE_OPPOSEDSKILL = "opposedskill";
+--TODO Momentum?
 
 local oldGetSpellAction;
 local oldApplyDamage;
@@ -31,7 +24,7 @@ function onInit()
     ActionsManager.registerModHandler("skill", newModSkill);
     ActionsManager.registerTargetingHandler("skill", onSkillTargeting);
     ActionsManager.registerResultHandler("skill", onSkillRoll);
-    OOBManager.registerOOBMsgHandler(OOB_MSGTYPE_OPPOSEDSKILL, handleOpposedSkill);
+    OOBManager.registerOOBMsgHandler("opposedskill", handleOpposedSkill);
 
     GameSystem.actions["skill"] = { sTargeting = "all", bUseModStack = true };
     table.insert(GameSystem.targetactions, "skill");
@@ -553,7 +546,7 @@ function notifyOpposedSkill(rSource, rTarget, bSecret, sSkillName, sDesc, nTotal
     end
 
     local msgOOB = {};
-    msgOOB.type = OOB_MSGTYPE_OPPOSEDSKILL;
+    msgOOB.type = "opposedskill";
 
     if bSecret then
         msgOOB.nSecret = 1;

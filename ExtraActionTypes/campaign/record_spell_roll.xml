@@ -34,4 +34,11 @@
             </button_stringcycler>
         </sheetdata>
     </windowclass>
+    <windowclass name="spell_header" merge="join">
+        <sheetdata>
+            <basicnumber name="cost">
+                <min merge="delete" />
+            </basicnumber>
+        </sheetdata>
+    </windowclass>
 </root>
