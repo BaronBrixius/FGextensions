@@ -1,3 +1,11 @@
+--Skills: stealth, acrobatics vs move through space
+--Skill re-drops "chain" messages when
+--Maybe add a little explanation when dropping skill (e.g. "demoralize"/"bluff"/"move through threatened square")
+--TODO remove negative limit on spell point usage
+--TODO Momentum??
+--TODO Choose initiative
+
+
 local oldGetSpellAction;
 local oldApplyDamage;
 local oldOnEffectActorEndTurn;
@@ -7,6 +15,7 @@ local oldClearCritState;
 local oldAddItemToList;
 local oldCompareFields;
 local oldPerformAction;
+local oldGetHealRoll;
 local oldGetDefenseValue;
 local oldOnAttack;
 local oldOnMissChance;
@@ -54,6 +63,9 @@ function onInit()
     ItemManager.compareFields = newCompareFields;
 
     -- Temp HP Changes & Auto Concentration
+    oldGetHealRoll = ActionHeal.getRoll;
+    ActionHeal.getRoll = newGetHealRoll;
+
     oldApplyDamage = ActionDamage.applyDamage;
     ActionDamage.applyDamage = newApplyDamage;
 
@@ -387,8 +399,8 @@ function newGetSpellAction(rActor, nodeAction, sSubRoll)
     return rAction;
 end
 
-function getHealRollTempHPEffects(rActor, rAction)
-    local rRoll = ActionHeal.getRoll(rActor, rAction);
+function newGetHealRoll(rActor, rAction)
+    local rRoll = oldGetHealRoll(rActor, rAction);
     if rAction.type == "heal" and rAction.subtype == "temp" and rAction.meta then
         if rAction.meta == "invigorate" then
             rRoll.sDesc = rRoll.sDesc .. " [INVIGORATE]";

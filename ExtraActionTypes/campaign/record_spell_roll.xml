@@ -8,15 +8,6 @@
 <root>
     <windowclass name="power_cast_editor_main" merge="join">
         <sheetdata>
-            <button_stringcycler name="atktype">
-                <parameters>
-                    <defaultlabelres>power_label_atktypenone</defaultlabelres>
-                    <labelsres>
-                        power_label_atktypemelee|power_label_atktyperanged|power_label_atktypemtouch|power_label_atktypertouch|power_label_atktypegrapple
-                    </labelsres>
-                    <values>melee|ranged|mtouch|rtouch|cm</values>
-                </parameters>
-            </button_stringcycler>
             <cycler_ability name="attackbabreplace">
                 <anchored to="atktype" position="righthigh" offset="10,0" width="40" />
                 <parameters>
@@ -26,7 +17,7 @@
                 </parameters>
             </cycler_ability>
             <cycler_ability name="attackstatreplace">
-                <anchored to="attackbabreplace" position="righthigh" offset="10,0" width="40" height="20" />
+                <anchored to="attackbabreplace" position="righthigh" offset="10,0" width="40" />
             </cycler_ability>
             <label name="atkplus">
                 <anchored to="atktype" position="righthigh" offset="105,0" width="10" />
