@@ -5,6 +5,7 @@
 --TODO Momentum??
 --TODO Choose initiative
 
+local OOB_MSGTYPE_OPPOSEDSKILL = "opposedskill";
 
 local oldGetSpellAction;
 local oldApplyDamage;
@@ -25,10 +26,11 @@ local oldProcessEffect;
 local oldOnImageInit;
 
 function onInit()
-    -- Demoralize
+    -- Opposed Skills
     OptionsManager.registerOption2("TARGETEDSKILLS", true, "option_header_client", "option_label_TARGETEDSKILLS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "on" });
     ActionsManager.registerTargetingHandler("skill", onSkillTargeting);
     ActionsManager.registerResultHandler("skill", onSkillRoll);
+    OOBManager.registerOOBMsgHandler(OOB_MSGTYPE_OPPOSEDSKILL, handleOpposedSkill);
 
     GameSystem.actions["skill"] = { sTargeting = "all", bUseModStack = true };
     table.insert(GameSystem.targetactions, "skill");
@@ -413,59 +415,143 @@ function newGetHealRoll(rActor, rAction)
     return rRoll;
 end
 
-local skillTargetDCs = {
-    bluff = {beatBy = true, dcCalc = function(rActor) return 10 + ActorManager35E.getAbilityScore(rActor, "bab") + ActorManager35E.getAbilityBonus(rActor, "wisdom") end},
-    intimidate = {beatBy = true, dcCalc = function(rActor) return 10 + ActorManager35E.getAbilityScore(rActor, "lev") + ActorManager35E.getAbilityBonus(rActor, "wisdom") end},
-    heal = {beatBy = false, dcCalc = function() return 15 end}
+local skillTargeting = {
+    acrobatics = {desc = "Move Through Threatened Square", beatBy = true,
+                  dcCalc = function(rSource, rTarget)
+                      local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sDesc = "grapple"});
+                      return nDefenseVal + nDefEffectsBonus
+                  end},
+    bluff = {desc = "Feint", beatBy = true,
+             dcCalc = function(rSource, rTarget)
+                 return 10 + ActorManager35E.getAbilityScore(rTarget, "bab") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+             end},
+    intimidate = {desc = "Demoralize", beatBy = true,
+                  dcCalc = function(rSource, rTarget)
+                      return 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                  end},
+    heal = {desc = "Medical Training", beatBy = false, icon = "roll_heal",
+            dcCalc = function()
+                return 15
+            end}
 }
 
+function newGetSkillRoll(rActor, sSkillName, nSkillMod, sSkillStat, sExtra)
+    local rRoll = oldGetSkillRoll(rActor, sSkillName, nSkillMod, sSkillStat, sExtra);
+    rRoll.sSkillName = sSkillName;
+    return rRoll;
+end
+
 function onSkillTargeting(rSource, aTargeting, rRolls)
+    --Debug.chat('onskilltargeting', rSource, aTargeting, rRolls)
     if OptionsManager.isOption("TARGETEDSKILLS", "off") then
         return nil;
     end
 
-    local sSkillName = rRolls[1].sDesc:match("%[SKILL%] ([^%s]+)"):lower()
-    if not skillTargetDCs[sSkillName] then
-        return nil;
+    for _,rRoll in pairs(rRolls) do
+        local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower()
+        if skillTargeting[sSkillName] then    --if at least one skill has targeting info, then do target calcs
+            return ActionAttack.onTargeting(rSource, aTargeting, rRolls);   --targeting logic is the same for skills as for attacks
+        end
     end
-
-    return ActionAttack.onTargeting(rSource, aTargeting, rRolls);   --targeting logic is the same for skills as for attacks
+    return nil;
 end
 
 function onSkillRoll(rSource, rTarget, rRoll)
-    local rMessage = ActionsManager.createActionMessage(rSource, rRoll);
-    rMessage.text = string.gsub(rMessage.text, " %[MOD:[^]]*%]", "");
-
-    local nTotal = ActionsManager.total(rRoll);
-    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower()
-
-    if rRoll.nTarget then
-        local nTargetDC = tonumber(rRoll.nTarget) or 0;
-
-        rMessage.text = rMessage.text .. " (vs. DC " .. nTargetDC .. ")";
-        if nTotal >= nTargetDC then
-            rMessage.text = rMessage.text .. " [SUCCESS]";
-        else
-            rMessage.text = rMessage.text .. " [FAILURE]";
-        end
-    elseif rTarget then
-        local nTargetDC = skillTargetDCs[sSkillName].dcCalc(rTarget)
-        if sSkillName == "heal" and not useMedicalTraining(rSource, rTarget, nTotal - nTargetDC + 1) then   --if source can't use medical training, then no need to continue with targeting
-            Comm.deliverChatMessage(rMessage);
-            return;
-        end
-
-        rMessage.text = rMessage.text .. " [at " .. ActorManager.getDisplayName(rTarget) .. "]";
-        if nTotal >= nTargetDC then
-            rMessage.text = rMessage.text .. " [SUCCESS]";
-            if skillTargetDCs[sSkillName].beatBy then
-                rMessage.text = rMessage.text .. " BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+";
-            end
-        else
-            rMessage.text = rMessage.text .. " [FAILURE]";
-        end
+    ActionSkill.onRoll(rSource, rTarget, rRoll)
+    if not rTarget then
+        return
     end
-    Comm.deliverChatMessage(rMessage);
+
+    local sResults;
+
+    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower()
+    local nTotal = ActionsManager.total(rRoll);
+    local nTargetDC = skillTargeting[sSkillName].dcCalc(rSource, rTarget)
+
+    if nTotal >= nTargetDC then
+        sResults = "[SUCCESS]";
+        if skillTargeting[sSkillName].beatBy then
+            sResults = sResults .. " BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+";
+        end
+    else
+        sResults = "[FAILURE]";
+    end
+
+    notifyOpposedSkill(rSource, rTarget, rRoll.bTower, sSkillName, rRoll.sDesc, nTotal, sResults)
+end
+
+function notifyOpposedSkill(rSource, rTarget, bSecret, sSkillName, sDesc, nTotal, sResults)
+    if not rTarget then
+        return;
+    end
+
+    local msgOOB = {};
+    msgOOB.type = OOB_MSGTYPE_OPPOSEDSKILL;
+
+    if bSecret then
+        msgOOB.nSecret = 1;
+    else
+        msgOOB.nSecret = 0;
+    end
+    msgOOB.sSkillName = sSkillName;
+    msgOOB.nTotal = nTotal;
+    msgOOB.sDesc = sDesc;
+    msgOOB.sResults = sResults;
+
+    msgOOB.sSourceNode = ActorManager.getCreatureNodeName(rSource);
+    msgOOB.sTargetNode = ActorManager.getCreatureNodeName(rTarget);
+
+    Comm.deliverOOBMessage(msgOOB, "");
+end
+
+function handleOpposedSkill(msgOOB)
+    local rSource = ActorManager.resolveActor(msgOOB.sSourceNode);
+    local rTarget = ActorManager.resolveActor(msgOOB.sTargetNode);
+    local nTotal = tonumber(msgOOB.nTotal) or 0;
+    applyOpposedSkill(rSource, rTarget, (tonumber(msgOOB.nSecret) == 1), msgOOB.sSkillName, msgOOB.sDesc, nTotal, msgOOB.sResults);
+end
+
+function applyOpposedSkill(rSource, rTarget, bSecret, sSkillName, sDesc, nTotal, sResults)
+    if not rTarget then
+        return;
+    end
+
+    local msgShort = {font = "msgfont"};
+    local msgLong = {font = "msgfont"};
+
+    local sSkillDesc = skillTargeting[sSkillName].desc;
+    msgShort.text = sSkillDesc .. " ->";
+    msgLong.text = sSkillDesc .. " [" .. nTotal .. "] ->";
+
+    if sSkillName == "heal" and not useMedicalTraining(rSource, rTarget, nTotal) then   --if source can't use medical training, then no need to describe success/failure
+        --msgShort.text = msgShort.text .. " [TARGET HAS BEEN HEALED TOO MANY TIMES.]";
+        --msgLong.text = msgLong.text .. " [TARGET HAS BEEN HEALED TOO MANY TIMES.]";
+        --ActionsManager.outputResult(bSecret, rSource, rTarget, msgLong, msgShort);
+        return;
+    end
+
+    local sTargetName = ActorManager.getDisplayName(rTarget);
+    msgShort.text = msgShort.text .. " [at " .. sTargetName .. "]";
+    msgLong.text = msgLong.text .. " [at " .. sTargetName .. "]";
+
+    if sResults ~= "" then
+        msgLong.text = msgLong.text .. " " .. sResults;
+    end
+
+    msgShort.icon = "roll_attack";
+    --if string.match(sResults, "%[CRITICAL HIT%]") then
+    --    msgLong.icon = "roll_attack_crit";
+    --elseif string.match(sResults, "HIT%]") then
+    --    msgLong.icon = "roll_attack_hit";
+    --elseif string.match(sResults, "MISS%]") then
+    --    msgLong.icon = "roll_attack_miss";
+    --elseif string.match(sResults, "CRITICAL THREAT%]") then
+    --    msgLong.icon = "roll_attack_hit";
+    --else
+        msgLong.icon = "roll_attack";
+    --end
+
+    ActionsManager.outputResult(bSecret, rSource, rTarget, msgLong, msgShort);
 end
 
 function useMedicalTraining(rSource, rTarget, nTotal)
@@ -473,6 +559,8 @@ function useMedicalTraining(rSource, rTarget, nTotal)
     if sNodeType ~= "pc" then
         return false;
     end
+
+    local nHealAmount = nTotal - 14;
 
     local scholarLevel = 0;
     for _,class in pairs(nodeActor.getChild("classes").getChildren()) do
@@ -484,9 +572,9 @@ function useMedicalTraining(rSource, rTarget, nTotal)
     if scholarLevel == 0 then
         return false;
     elseif scholarLevel >= 9 then
-        nTotal = nTotal * 3;
+        nHealAmount = nHealAmount * 3;
     elseif scholarLevel >= 5 then
-        nTotal = nTotal * 2;
+        nHealAmount = nHealAmount * 2;
     end
 
     local nTimesUsed = 0;
@@ -504,8 +592,8 @@ function useMedicalTraining(rSource, rTarget, nTotal)
     end
 
     EffectManager.notifyApply({ sName = "STACK: Healer's Kit Use", sSource = rSource.sCTNode or "" , nDuration = 14400}, ActorManager.getCTNodeName(rTarget));
-    if nTotal > 0 then
-        newApplyDamage(rSource, rTarget, false, "heal", "[HEAL] Healer's Kit Use", nTotal)
+    if nHealAmount > 0 then
+        newApplyDamage(rSource, rTarget, false, "heal", "[HEAL] Healer's Kit Use", nHealAmount)
     end
     return true;
 end
