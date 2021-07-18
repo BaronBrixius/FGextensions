@@ -28,6 +28,7 @@ local oldOnImageInit;
 function onInit()
     -- Opposed Skills
     OptionsManager.registerOption2("TARGETEDSKILLS", true, "option_header_client", "option_label_TARGETEDSKILLS", "option_entry_cycler", { labels = "option_val_on", values = "on", baselabel = "option_val_off", baseval = "off", default = "on" });
+    ActionsManager.registerModHandler("skill", newModSkill);
     ActionsManager.registerTargetingHandler("skill", onSkillTargeting);
     ActionsManager.registerResultHandler("skill", onSkillRoll);
     OOBManager.registerOOBMsgHandler(OOB_MSGTYPE_OPPOSEDSKILL, handleOpposedSkill);
@@ -419,19 +420,28 @@ local skillTargeting = {
     acrobatics = {desc = "Move Through Threatened Square", beatBy = true,
                   dcCalc = function(rSource, rTarget)
                       local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sDesc = "grapple"});
-                      return nDefenseVal + nDefEffectsBonus
+                      return nDefenseVal, nDefEffectsBonus
                   end},
     bluff = {desc = "Feint", beatBy = true,
              dcCalc = function(rSource, rTarget)
-                 return 10 + ActorManager35E.getAbilityScore(rTarget, "bab") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                 local nDefenseVal = 10 + ActorManager35E.getAbilityScore(rTarget, "bab") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                 local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, {"WIS"}, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, {"NLVL"}, true, nil, rSource);
+                 return nDefenseVal, nDefEffectsBonus
              end},
     intimidate = {desc = "Demoralize", beatBy = true,
                   dcCalc = function(rSource, rTarget)
-                      return 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                      local nDefenseVal = 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                      local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, {"WIS"}, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, {"NLVL"}, true, nil, rSource);
+                      return nDefenseVal, nDefEffectsBonus
                   end},
+    escapeartist = {desc = "Move Through Threatened Square", beatBy = true,
+          dcCalc = function(rSource, rTarget)
+              local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sDesc = "grapple"});
+              return nDefenseVal, nDefEffectsBonus
+          end},
     heal = {desc = "Medical Training", beatBy = false, icon = "roll_heal",
-            dcCalc = function()
-                return 15
+            dcCalc = function(rSource, rTarget)
+                return 15, 0
             end}
 }
 
@@ -448,7 +458,7 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
     end
 
     for _,rRoll in pairs(rRolls) do
-        local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower()
+        local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower():gsub("%s+", "")
         if skillTargeting[sSkillName] then    --if at least one skill has targeting info, then do target calcs
             return ActionAttack.onTargeting(rSource, aTargeting, rRolls);   --targeting logic is the same for skills as for attacks
         end
@@ -456,28 +466,81 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
     return nil;
 end
 
+function newModSkill(rSource, rTarget, rRoll)   --skill targeting would require an obnoxious number of overrides before it would work with targeted effects, so we just remove the targeting on the effects we want to use while calculating and put it back later
+    local aSourceTargetedEffects = clearTargetedEffects(rSource, rTarget);
+    local aTargetTargetedEffects = clearTargetedEffects(rTarget, rSource);
+
+    local returnValue = ActionSkill.modSkill(rSource, rTarget, rRoll)    --modSkill doesn't return anything at the time of writing, but just in case
+
+    restoreTargetedEffects(aSourceTargetedEffects)
+    restoreTargetedEffects(aTargetTargetedEffects)
+
+    return returnValue;
+end
+
+
+function clearTargetedEffects(rSource, rTarget)
+    local aTargetedEffects = {};
+
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rSource), "effects")) do
+        for _, nodeTarget in pairs(DB.getChildren(nodeEffect, "targets")) do
+            if DB.getValue(nodeTarget, "noderef", "") == rTarget.sCTNode then
+                aTargetedEffects[nodeEffect] = EffectManager.getEffectTargets(nodeEffect)
+                DB.deleteChild(nodeEffect, "targets")
+                break;
+            end
+        end
+    end
+
+    return aTargetedEffects;
+end
+
+function restoreTargetedEffects(aTargetedEffects)
+    for effectNode, aEffectTargets in pairs(aTargetedEffects) do
+        local nodeTargetList = DB.createChild(effectNode, "targets");
+        for _,nodeTarget in pairs(aEffectTargets) do
+            local nodeNewTarget = nodeTargetList.createChild();
+            if nodeNewTarget then
+                DB.setValue(nodeNewTarget, "noderef", "string", nodeTarget);
+            end
+        end
+    end
+end
+
+
 function onSkillRoll(rSource, rTarget, rRoll)
     ActionSkill.onRoll(rSource, rTarget, rRoll)
     if not rTarget then
         return
     end
 
-    local sResults;
-
-    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower()
+    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower():gsub("%s+", "")
+    local nDefenseVal, nDefEffectsBonus = skillTargeting[sSkillName].dcCalc(rSource, rTarget)
     local nTotal = ActionsManager.total(rRoll);
-    local nTargetDC = skillTargeting[sSkillName].dcCalc(rSource, rTarget)
 
-    if nTotal >= nTargetDC then
-        sResults = "[SUCCESS]";
-        if skillTargeting[sSkillName].beatBy then
-            sResults = sResults .. " BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+";
-        end
-    else
-        sResults = "[FAILURE]";
-    end
+    local sResults = getOpposedSkillResult(nTotal, nDefenseVal + (nDefEffectsBonus or 0), nDefEffectsBonus or 0, skillTargeting[sSkillName].beatBy)
 
     notifyOpposedSkill(rSource, rTarget, rRoll.bTower, sSkillName, rRoll.sDesc, nTotal, sResults)
+end
+
+function getOpposedSkillResult(nTotal, nTargetDC, nDefEffectsBonus, beatBy)
+    local aMessages = {};
+
+    if nDefEffectsBonus ~= 0 then
+        local sFormat = "[" .. Interface.getString("effects_def_tag") .. " %+d]";
+        table.insert(aMessages, string.format(sFormat, nDefEffectsBonus));
+    end
+
+    if nTotal >= nTargetDC then
+        table.insert(aMessages, "[SUCCESS]");
+        if beatBy then
+            table.insert(aMessages, "BEAT BY " .. math.max(0, math.floor((nTotal - nTargetDC) / 5) * 5) .. "+");
+        end
+    else
+        table.insert(aMessages, "[FAILURE]");
+    end
+
+    return table.concat(aMessages, " ");
 end
 
 function notifyOpposedSkill(rSource, rTarget, bSecret, sSkillName, sDesc, nTotal, sResults)
@@ -605,13 +668,13 @@ function customOnEffectAddIgnoreCheckTargetInit(nodeCT, rNewEffect)
         rNewEffect.sName = StringManager.trim(rNewEffect.sName:gsub("TINIT;", ""));
     end
 
-    --copypasted default dupe check
+    --based on copypasted default dupe check
     local nodeEffectsList = nodeCT.createChild("effects");
     for _, v in pairs(nodeEffectsList.getChildren()) do
         if (DB.getValue(v, "label", "") == rNewEffect.sName)
                 and (DB.getValue(v, "init", 0) == rNewEffect.nInit)
                 and DB.getValue(v, "targets.id-00001.noderef", nil) == rNewEffect.sTarget   --added effect target to dupe check
-                --and (DB.getValue(v, "duration", 0) == rNewEffect.nDuration)
+                --and (DB.getValue(v, "duration", 0) == rNewEffect.nDuration)   -- still a dupe even if the duration is different
             then
             local nOriginalEffectDuration = DB.getValue(v, "duration", 0);   --removed duration needing to be identical to count as dupe, now updates old effect to refreshed duration
             if nOriginalEffectDuration > 0 and (nOriginalEffectDuration < rNewEffect.nDuration or rNewEffect.nDuration == 0) then
