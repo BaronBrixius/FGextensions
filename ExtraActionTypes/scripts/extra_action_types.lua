@@ -419,7 +419,7 @@ end
 local skillTargeting = {
     acrobatics = {desc = "Move Through Threatened Square", beatBy = true,
                   dcCalc = function(rSource, rTarget)
-                      local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sDesc = "grapple"});
+                      local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sType = "grapple", sDesc = ""});
                       return nDefenseVal, nDefEffectsBonus
                   end},
     bluff = {desc = "Feint", beatBy = true,
@@ -434,9 +434,9 @@ local skillTargeting = {
                       local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, {"WIS"}, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, {"NLVL"}, true, nil, rSource);
                       return nDefenseVal, nDefEffectsBonus
                   end},
-    escapeartist = {desc = "Move Through Threatened Square", beatBy = true,
+    escapeartist = {desc = "Escape Grapple", beatBy = false,
           dcCalc = function(rSource, rTarget)
-              local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sDesc = "grapple"});
+              local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sType = "grapple", sDesc = ""});
               return nDefenseVal, nDefEffectsBonus
           end},
     heal = {desc = "Medical Training", beatBy = false, icon = "roll_heal",
@@ -458,7 +458,7 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
     end
 
     for _,rRoll in pairs(rRolls) do
-        local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower():gsub("%s+", "")
+        local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%[]+)"):lower():gsub("%s+", "")
         if skillTargeting[sSkillName] then    --if at least one skill has targeting info, then do target calcs
             return ActionAttack.onTargeting(rSource, aTargeting, rRolls);   --targeting logic is the same for skills as for attacks
         end
@@ -467,10 +467,15 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
 end
 
 function newModSkill(rSource, rTarget, rRoll)   --skill targeting would require an obnoxious number of overrides before it would work with targeted effects, so we just remove the targeting on the effects we want to use while calculating and put it back later
+    --modSkill doesn't return anything at the time of writing, but return its value just in case it's added
+    if not rTarget then
+        return ActionSkill.modSkill(rSource, rTarget, rRoll)
+    end
+
     local aSourceTargetedEffects = clearTargetedEffects(rSource, rTarget);
     local aTargetTargetedEffects = clearTargetedEffects(rTarget, rSource);
 
-    local returnValue = ActionSkill.modSkill(rSource, rTarget, rRoll)    --modSkill doesn't return anything at the time of writing, but just in case
+    local returnValue = ActionSkill.modSkill(rSource, rTarget, rRoll)
 
     restoreTargetedEffects(aSourceTargetedEffects)
     restoreTargetedEffects(aTargetTargetedEffects)
@@ -507,14 +512,13 @@ function restoreTargetedEffects(aTargetedEffects)
     end
 end
 
-
 function onSkillRoll(rSource, rTarget, rRoll)
     ActionSkill.onRoll(rSource, rTarget, rRoll)
     if not rTarget then
         return
     end
 
-    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%s]+)"):lower():gsub("%s+", "")
+    local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%[]+)"):lower():gsub("%s+", "")
     local nDefenseVal, nDefEffectsBonus = skillTargeting[sSkillName].dcCalc(rSource, rTarget)
     local nTotal = ActionsManager.total(rRoll);
 
@@ -587,9 +591,6 @@ function applyOpposedSkill(rSource, rTarget, bSecret, sSkillName, sDesc, nTotal,
     msgLong.text = sSkillDesc .. " [" .. nTotal .. "] ->";
 
     if sSkillName == "heal" and not useMedicalTraining(rSource, rTarget, nTotal) then   --if source can't use medical training, then no need to describe success/failure
-        --msgShort.text = msgShort.text .. " [TARGET HAS BEEN HEALED TOO MANY TIMES.]";
-        --msgLong.text = msgLong.text .. " [TARGET HAS BEEN HEALED TOO MANY TIMES.]";
-        --ActionsManager.outputResult(bSecret, rSource, rTarget, msgLong, msgShort);
         return;
     end
 
@@ -602,17 +603,13 @@ function applyOpposedSkill(rSource, rTarget, bSecret, sSkillName, sDesc, nTotal,
     end
 
     msgShort.icon = "roll_attack";
-    --if string.match(sResults, "%[CRITICAL HIT%]") then
-    --    msgLong.icon = "roll_attack_crit";
-    --elseif string.match(sResults, "HIT%]") then
-    --    msgLong.icon = "roll_attack_hit";
-    --elseif string.match(sResults, "MISS%]") then
-    --    msgLong.icon = "roll_attack_miss";
-    --elseif string.match(sResults, "CRITICAL THREAT%]") then
-    --    msgLong.icon = "roll_attack_hit";
-    --else
+    if string.match(sResults, "SUCCESS%]") then
+        msgLong.icon = "roll_attack_hit";
+    elseif string.match(sResults, "FAILURE%]") then
+        msgLong.icon = "roll_attack_miss";
+    else
         msgLong.icon = "roll_attack";
-    --end
+    end
 
     ActionsManager.outputResult(bSecret, rSource, rTarget, msgLong, msgShort);
 end
