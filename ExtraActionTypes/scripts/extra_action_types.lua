@@ -410,32 +410,32 @@ function newGetHealRoll(rActor, rAction)
 end
 
 local skillTargeting = {
-    acrobatics = {desc = "Move Through Threatened Square", beatBy = true,
-                  dcCalc = function(rSource, rTarget)
-                      local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sType = "grapple", sDesc = ""});
-                      return nDefenseVal, nDefEffectsBonus
-                  end},
-    bluff = {desc = "Feint", beatBy = true,
+    acrobatics = { desc = "Move Through Threatened Square", beatBy = true,
+                   dcCalc = function(rSource, rTarget)
+                       local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, { sType = "grapple", sDesc = "" });
+                       return nDefenseVal, nDefEffectsBonus
+                   end },
+    bluff = { desc = "Feint", beatBy = true,
+              dcCalc = function(rSource, rTarget)
+                  local nDefenseVal = 10 + ActorManager35E.getAbilityScore(rTarget, "bab") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                  local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, { "WIS" }, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, { "NLVL" }, true, nil, rSource);
+                  return nDefenseVal, nDefEffectsBonus
+              end },
+    intimidate = { desc = "Demoralize", beatBy = true,
+                   dcCalc = function(rSource, rTarget)
+                       local nDefenseVal = 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
+                       local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, { "WIS" }, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, { "NLVL" }, true, nil, rSource);
+                       return nDefenseVal, nDefEffectsBonus
+                   end },
+    escapeartist = { desc = "Escape Grapple", beatBy = false,
+                     dcCalc = function(rSource, rTarget)
+                         local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, { sType = "grapple", sDesc = "" });
+                         return nDefenseVal, nDefEffectsBonus
+                     end },
+    heal = { desc = "Medical Training", beatBy = false, icon = "roll_heal",
              dcCalc = function(rSource, rTarget)
-                 local nDefenseVal = 10 + ActorManager35E.getAbilityScore(rTarget, "bab") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
-                 local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, {"WIS"}, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, {"NLVL"}, true, nil, rSource);
-                 return nDefenseVal, nDefEffectsBonus
-             end},
-    intimidate = {desc = "Demoralize", beatBy = true,
-                  dcCalc = function(rSource, rTarget)
-                      local nDefenseVal = 10 + ActorManager35E.getAbilityScore(rTarget, "lev") + ActorManager35E.getAbilityBonus(rTarget, "wisdom")
-                      local nDefEffectsBonus = EffectManager35E.getEffectsBonus(rTarget, {"WIS"}, true, nil, rSource) - EffectManager35E.getEffectsBonus(rTarget, {"NLVL"}, true, nil, rSource);
-                      return nDefenseVal, nDefEffectsBonus
-                  end},
-    escapeartist = {desc = "Escape Grapple", beatBy = false,
-          dcCalc = function(rSource, rTarget)
-              local nDefenseVal, nAtkEffectsBonus, nDefEffectsBonus, nMissChance = ActorManager35E.getDefenseValue(rSource, rTarget, {sType = "grapple", sDesc = ""});
-              return nDefenseVal, nDefEffectsBonus
-          end},
-    heal = {desc = "Medical Training", beatBy = false, icon = "roll_heal",
-            dcCalc = function(rSource, rTarget)
-                return 15, 0
-            end}
+                 return 15, 0
+             end }
 }
 
 function newGetSkillRoll(rActor, sSkillName, nSkillMod, sSkillStat, sExtra)
@@ -450,16 +450,18 @@ function onSkillTargeting(rSource, aTargeting, rRolls)
         return nil;
     end
 
-    for _,rRoll in pairs(rRolls) do
+    for _, rRoll in pairs(rRolls) do
         local sSkillName = rRoll.sDesc:match("%[SKILL%] ([^%[]+)"):lower():gsub("%s+", "")
-        if skillTargeting[sSkillName] then    --if at least one skill has targeting info, then do target calcs
+        if skillTargeting[sSkillName] then
+            --if at least one skill has targeting info, then do target calcs
             return ActionAttack.onTargeting(rSource, aTargeting, rRolls);   --targeting logic is the same for skills as for attacks
         end
     end
     return nil;
 end
 
-function newModSkill(rSource, rTarget, rRoll)   --skill targeting would require an obnoxious number of overrides before it would work with targeted effects, so we just remove the targeting on the effects we want to use while calculating and put it back later
+function newModSkill(rSource, rTarget, rRoll)
+    --skill targeting would require an obnoxious number of overrides before it would work with targeted effects, so we just remove the targeting on the effects we want to use while calculating and put it back later
     --modSkill doesn't return anything at the time of writing, but return its value just in case it's added
     if not rTarget then
         return ActionSkill.modSkill(rSource, rTarget, rRoll)
