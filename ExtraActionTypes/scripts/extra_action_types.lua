@@ -1,4 +1,6 @@
---TODO Momentum?
+-- TODO Momentum?
+-- todo concentration for npcs
+-- todo knowledge skills?
 
 local oldGetSpellAction;
 local oldApplyDamage;
@@ -17,6 +19,7 @@ local oldOnMirrorImage;
 local oldNotifyExpire;
 local oldProcessEffect;
 local oldOnImageInit;
+local oldGetDamageAdjust;
 
 function onInit()
     -- Opposed Skills
@@ -112,6 +115,10 @@ function onInit()
         oldOnImageInit = ImageManager.onImageInit;
         ImageManager.onImageInit = newOnImageInit;
     end
+
+    -- Stoneskin/Protection From Energy: IMMUNE/DR/RESIST with capped amount blocked
+    oldGetDamageAdjust = ActionDamage.getDamageAdjust;
+    ActionDamage.getDamageAdjust = newGetDamageAdjust;
 end
 
 function applyNewAuraToOthers(nodeTargetEffect, rNewEffect)
@@ -202,17 +209,9 @@ function newOnEffectActorEndTurn(nodeActor, nodeEffect)
 end
 
 function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
-    if string.match(sDamage, "%[TYPE: delayed") then    -- directly manipulate delayed damage pool. no validation, just let users go nuts
-        for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
-            local sEffectLabel = DB.getValue(nodeEffect, "label", "");
-            if string.find(sEffectLabel, "^Delayed:") then
-                local nCurrPoolDamage = tonumber(string.match(sEffectLabel, "Delayed: (%d+)/%d+"));
-                local sNewEffectLabel = sEffectLabel:gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage + nTotal));
-                DB.setValue(nodeEffect, "label", "string", sNewEffectLabel);
-                break;
-            end
-        end
-        return;
+    if string.match(sDamage, "%[TYPE: delayed") then
+        manipulateDelayedDamagePool(rTarget, sDamage, nTotal)
+        return ;
     end
 
     local nHealthBeforeAttack, nTempHealthBeforeAttack = getTotalHP(rTarget);
@@ -238,12 +237,37 @@ function newApplyDamage(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
             removeVitalityEffects(rTarget);
         end
 
-        for _, rEffect in ipairs(getConcentrationEffects(rTarget)) do
-            forceConcentrationCheck(rTarget, rEffect, nHealthLost)
+        for _, nodeEffect in ipairs(getConcentrationEffects(rTarget)) do
+            local nActive = DB.getValue(nodeEffect, "isactive", 0)
+            if nActive == 2 then
+                DB.setValue(nodeEffect, "label", "number", 1);
+            elseif nActive == 1 then
+                forceConcentrationCheck(rTarget, nodeEffect, nHealthLost)
+            end
         end
     end
 
     applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthBeforeAttack - nTempHealthAfterAttack, rTarget, sRollType, sDamage)
+end
+
+function manipulateDelayedDamagePool(rTarget, sDamage, nTotal)    -- directly manipulate delayed damage pool. no validation, just let users go nuts
+    local nEffectsBonus = tonumber(sDamage:match("%[EFFECTS %+?(%-?%d+)") or 0)
+    nTotal = nTotal - nEffectsBonus    -- effect totals can be hard to remember when manipulating directly
+
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        local sEffectLabel = DB.getValue(nodeEffect, "label", "");
+        if string.find(sEffectLabel, "^Delayed:") then
+            local nActive = DB.getValue(nodeEffect, "isactive", 0)
+            if nActive == 2 then
+                DB.setValue(nodeEffect, "label", "number", 1);
+            elseif nActive == 1 then
+                local nCurrPoolDamage = tonumber(string.match(sEffectLabel, "Delayed: (%d+)/%d+"));
+                local sNewEffectLabel = sEffectLabel:gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage + nTotal));
+                DB.setValue(nodeEffect, "label", "string", sNewEffectLabel);
+            end
+            break;
+        end
+    end
 end
 
 function applyUndeadEnergyInversion(rSource, rTarget, bSecret, sRollType, sDamage, nTotal)
@@ -326,7 +350,7 @@ function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, s
     end
 
     local rDelayedDamagePoolEffect, nCurrPoolDamage, nTotalPool;
-    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+    for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do   --fixme ActorManager.getEffects(rTarget) might work?
         local sEffectLabel = DB.getValue(nodeEffect, "label", "");
         if string.find(sEffectLabel, "^Delayed:") then
 
@@ -361,8 +385,8 @@ function applyDelayedDamagePool(nTotal, nHealthLost, nTempHealthLost, rTarget, s
         local nHealthInPool = tonumber(nTotalPool) - tonumber(nCurrPoolDamage);
         local nDamageToDelay = math.min(nHealthInPool, nHealthLost);
 
-        local sNewEffectLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage + nDamageToDelay));
-        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sNewEffectLabel);
+        local sEffectNewLabel = DB.getValue(rDelayedDamagePoolEffect, "label"):gsub("Delayed: %-?%d+", "Delayed: " .. (nCurrPoolDamage + nDamageToDelay));
+        DB.setValue(rDelayedDamagePoolEffect, "label", "string", sEffectNewLabel);
 
         local nHealthToRestore = math.min(nHealthLost - nTempHealthLost, nDamageToDelay);
         DB.setValue(nodeTarget, "hp.wounds", "number", DB.getValue(nodeTarget, "hp.wounds", 0) - nHealthToRestore);
@@ -867,7 +891,12 @@ end
 function removeVitalityEffects(rTarget)
     for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
         if string.find(DB.getValue(nodeEffect, "label", ""):lower(), "^vitality;") then
-            EffectManager.expireEffect(rTarget, nodeEffect, 0);
+            local nActive = DB.getValue(nodeEffect, "isactive", 0)
+            if nActive == 2 then
+                DB.setValue(nodeEffect, "label", "number", 1);
+            elseif nActive == 1 then
+                EffectManager.expireEffect(rTarget, nodeEffect, 0);
+            end
         end
     end
 end
@@ -891,12 +920,17 @@ end
 function applyResolveMandate(rSource, rTarget)
     for _, nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rSource), "effects")) do
         if string.find(DB.getValue(nodeEffect, "label", ""), "Resolve: ", 1, true) then
-            local sMandatePartnerName = string.gsub(DB.getValue(nodeEffect, "label", ""), "Resolve: ", "");
-            for _,nodeCT in pairs(CombatManager.getCombatantNodes()) do
-                if (DB.getValue(nodeCT, "name", "") == sMandatePartnerName) then
-                    local rResolveEffect = { sName = "TINIT; AC: 4 morale; SAVE: 4 morale", nDuration = 1.5, sTarget = rTarget.sCTNode};
-                    EffectManager.addEffect(nodeEffect.getOwner(), "", nodeCT, rResolveEffect, true);
-                    break;
+            local nActive = DB.getValue(nodeEffect, "isactive", 0)
+            if nActive == 2 then
+                DB.setValue(nodeEffect, "label", "number", 1);
+            elseif nActive == 1 then
+                local sMandatePartnerName = string.gsub(DB.getValue(nodeEffect, "label", ""), "Resolve: ", "");
+                for _, nodeCT in pairs(CombatManager.getCombatantNodes()) do
+                    if (DB.getValue(nodeCT, "name", "") == sMandatePartnerName) then
+                        local rResolveEffect = { sName = "TINIT; AC: 4 morale; SAVE: 4 morale", nDuration = 1.5, sTarget = rTarget.sCTNode };
+                        EffectManager.addEffect(nodeEffect.getOwner(), "", nodeCT, rResolveEffect, true);
+                        break;
+                    end
                 end
             end
         end
@@ -905,13 +939,13 @@ end
 
 local nConcentrationDC;
 local nConcentrationEffect;
-function forceConcentrationCheck(rActor, rConcentrationEffect, nMiscModifier)
-    for _, sEffectComp in ipairs(EffectManager.parseEffect(DB.getValue(rConcentrationEffect, "label", ""))) do
+function forceConcentrationCheck(rActor, nodeConcentrationEffect, nMiscModifier)
+    for _, sEffectComp in ipairs(EffectManager.parseEffect(DB.getValue(nodeConcentrationEffect, "label", ""))) do
         local rEffectComp = EffectManager35E.parseEffectComp(sEffectComp);
         for _, rCreatureSpellset in pairs(DB.getChildren(ActorManager.getCreatureNode(rActor), "spellset")) do
             if (rEffectComp.remainder[1] == DB.getValue(rCreatureSpellset, "label", "")) then
                 nConcentrationDC = 10 + rEffectComp.mod + nMiscModifier;
-                nConcentrationEffect = rConcentrationEffect;
+                nConcentrationEffect = nodeConcentrationEffect;
                 GameSystem.performConcentrationCheck(nil, rActor, rCreatureSpellset);
             end
         end
@@ -1057,6 +1091,119 @@ function newOnImageInit(cImage)
                 cImage.lastX = x;
                 cImage.lastY = y;
             end
+        end
+    end
+end
+
+function newGetDamageAdjust(rSource, rTarget, nDamage, rDamageOutput)   --get effects with capped immune/resist/dr, remove cap temporarily, let it calculate normally, reapply caps with new values
+    local aCappedImmune, aCappedResist, aCappedDr = stripCapsFromEffects(rTarget);
+
+    local nDamageAdjust, nNonlethal, bVulnerable, bResist = oldGetDamageAdjust(rSource, rTarget, nDamage, rDamageOutput);
+    Debug.chat(rDamageOutput)
+    if bResist then
+        for kDmgType, vAmount in pairs(rDamageOutput.aDamageTypes) do
+            calculateNewResistCaps(kDmgType, vAmount, nDamageAdjust, aCappedImmune, aCappedResist, aCappedDr);
+        end
+    end
+
+    restoreCapsOnEffects(rTarget, aCappedImmune, aCappedResist, aCappedDr)
+    return nDamageAdjust, nNonlethal, bVulnerable, bResist;
+end
+
+function stripCapsFromEffects(rTarget)
+    local aCappedImmune = {};
+    local aCappedResist = {};
+    local aCappedDr = {};
+
+    for _,nodeEffect in pairs(DB.getChildren(ActorManager.getCTNode(rTarget), "effects")) do
+        local sLabel = DB.getValue(nodeEffect, "label", "");
+        for _,sEffectComp in pairs(EffectManager.parseEffect(sLabel)) do
+            local sLabelWithoutCap, sAmount, sDmgType, sCap = string.match(sEffectComp, "(%u+%:%s*(%d*)%s*(%a*))%s+/(%d+)");
+            if sLabelWithoutCap then
+                if sEffectComp:find("IMMUNE%:") then
+                    table.insert(aCappedImmune, { nodeEffect = nodeEffect, nAmount = tonumber(sCap or 0), sDmgType = sDmgType, nCap = tonumber(sCap or 0) });
+                    -- capped immunities are changed to RESIST effects so that they don't block all damage
+                    DB.setValue(nodeEffect, "label", "string", string.gsub(sLabel, sEffectComp, "RESIST: " .. sCap .. " " .. sDmgType));
+                elseif sEffectComp:find("RESIST%:") then
+                    table.insert(aCappedResist, { nodeEffect = nodeEffect, nAmount = tonumber(sAmount or 0), sDmgType = sDmgType, nCap = tonumber(sCap or 0) });
+                    DB.setValue(nodeEffect, "label", "string", string.gsub(sLabel, sEffectComp, sLabelWithoutCap));
+                elseif sEffectComp:find("DR%:") then
+                    table.insert(aCappedDr, { nodeEffect = nodeEffect, nAmount = tonumber(sAmount or 0), sDmgType = sDmgType, nCap = tonumber(sCap or 0) });
+                    DB.setValue(nodeEffect, "label", "string", string.gsub(sLabel, sEffectComp, sLabelWithoutCap));
+                end
+            end
+        end
+    end
+    return aCappedImmune, aCappedResist, aCappedDr;
+end
+
+function calculateNewResistCaps(kDmgType, vAmount, nDamageAdjust, aCappedImmune, aCappedResist, aCappedDr)
+    local aSrcDmgClauseTypes, bHasEnergyType = splitIntoDamageTypes(kDmgType);
+
+    for _, vDmgClauseType in pairs(aSrcDmgClauseTypes) do
+        for _, vCappedEffect in ipairs(aCappedImmune) do
+            if vCappedEffect.sDmgType == vDmgClauseType then
+                vCappedEffect.nCap = vCappedEffect.nCap - math.min(vAmount, vCappedEffect.nAmount, nDamageAdjust * -1);
+                return ;
+            end
+        end
+        for _, vCappedEffect in ipairs(aCappedResist) do
+            if vCappedEffect.sDmgType == vDmgClauseType or vCappedEffect.sDmgType == "" then
+                vCappedEffect.nCap = vCappedEffect.nCap - math.min(vAmount, vCappedEffect.nAmount, nDamageAdjust * -1);
+                return ;
+            end
+        end
+        for _, vCappedEffect in ipairs(aCappedDr) do
+            if not bHasEnergyType and vCappedEffect.sDmgType ~= vDmgClauseType then
+                vCappedEffect.nCap = vCappedEffect.nCap - math.min(vAmount, vCappedEffect.nAmount, nDamageAdjust * -1);
+                return ;
+            end
+        end
+    end
+end
+
+function splitIntoDamageTypes(kDmgType)
+    local aSrcDmgClauseTypes = {};
+    local bHasEnergyType = false;
+    local aTemp = StringManager.split(kDmgType, ",", true);
+    for i = 1, #aTemp do
+        if aTemp[i] ~= "untyped" and aTemp[i] ~= "" then
+            table.insert(aSrcDmgClauseTypes, aTemp[i]);
+            if not bHasEnergyType and (StringManager.contains(DataCommon.energytypes, aTemp[i]) or (aTemp[i] == "spell")) then
+                bHasEnergyType = true;
+            end
+        end
+    end
+    return aSrcDmgClauseTypes, bHasEnergyType;
+end
+
+function restoreCapsOnEffects(rTarget, aCappedImmune, aCappedResist, aCappedDr)
+    for _, vCappedEffect in ipairs(aCappedImmune) do
+        if vCappedEffect.nCap <= 0 then
+            DB.setValue(vCappedEffect.nodeEffect, "label", "string", "IMMUNE: " .. vCappedEffect.sDmgType .. " /0")     --restores the IMMUNE label so that the deletion message isn't confusing
+            EffectManager.expireEffect(rTarget, vCappedEffect.nodeEffect, 0);
+        else
+            DB.setValue(vCappedEffect.nodeEffect, "label", "string", "IMMUNE: " .. vCappedEffect.sDmgType .. " /" .. vCappedEffect.nCap)
+        end
+    end
+
+    for _, vCappedEffect in ipairs(aCappedResist) do
+        if vCappedEffect.nCap <= 0 then
+            EffectManager.expireEffect(rTarget, vCappedEffect.nodeEffect, 0);
+        else
+            --math.min(vCappedEffect.nAmount, vCappedEffect.nCap)
+            -- presently not reducing DR when the remaining cap goes below the DR since it's less intrusive and I don't know the ruling
+            DB.setValue(vCappedEffect.nodeEffect, "label", "string", "RESIST: " .. vCappedEffect.nAmount .. (vCappedEffect.sDmgType ~= "" and (" " .. vCappedEffect.sDmgType) or "") .. " /" .. vCappedEffect.nCap)
+        end
+    end
+
+    for _, vCappedEffect in ipairs(aCappedDr) do
+        if vCappedEffect.nCap <= 0 then
+            EffectManager.expireEffect(rTarget, vCappedEffect.nodeEffect, 0);
+        else
+            --math.min(vCappedEffect.nAmount, vCappedEffect.nCap)
+            -- presently not reducing DR when the remaining cap goes below the DR since it's less intrusive and I don't know the ruling
+            DB.setValue(vCappedEffect.nodeEffect, "label", "string", "DR: " .. vCappedEffect.nAmount .. (vCappedEffect.sDmgType ~= "" and (" " .. vCappedEffect.sDmgType) or "") .. " /" .. vCappedEffect.nCap)
         end
     end
 end
